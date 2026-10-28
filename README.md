@@ -22,19 +22,45 @@ pixi run -e test lint         # ruff check; `pixi run -e test fmt` = ruff format
 ## Use
 
 ```python
-from twobunch_cnf.model import load_flow
-from twobunch_cnf.artifacts import flow_knob_space
+import twobunch_cnf
 
-flow = load_flow("<ckpt>")                          # eval mode, CPU by default
-frame = flow_knob_space(flow)                       # knob names + physical bounds stored in the ckpt
-knobs_norm = frame.normalize(knobs_phys)            # (B, n_knob) physical -> the ckpt's [0, 1] frame
-obs = flow.observables(knobs_norm, n=1024)          # differentiable beam observables + feasibility
-drive = flow.sample_bunch(knobs_norm, 0, 4096)      # (B, 4096, 6) in (x, y, z, px, py, pz), m and eV/c
+model = twobunch_cnf.load_model("c_b3_ema")         # shipped bundle (or a bundle directory); CPU by default
+model.knob_names                                     # 37 knobs; model.meta["knobs"]: bounds, baseline, unit
+P = model.particle_group({"L2PhaseSet": -35.0},      # one shot as an openPMD ParticleGroup; other knobs at
+                         seed=0)                     #   the baseline, XTCAVF entrance plane, 10000 injected
+dr = model.draw({"L2PhaseSet": [-36.0, -35.0]}, n_particles=50000, seed=1)   # batched shots
+P_exit = model.to_particle_group(dr, index=1, plane="exit")
 ```
 
-`twobunch_cnf.charges.injected_charges_nC` gives the per-bunch injected charge (charge at the treaty
-point = T x injected); `twobunch_cnf.beam_io` holds the ParticleGroup <-> (n, 6) cloud convention
-(drive = higher per-particle weight, charge ratio in the macroparticle counts).
+A shot follows the FACET2-S2E two-bunch convention: one ParticleGroup, drive = the higher of two
+per-particle weights (Q/N x 1.001 vs 0.999), the charge ratio in the macroparticle counts, lost
+particles removed (`n_particles` is the injected count). The frame is fixed-z (z = s of the plane, the
+longitudinal coordinate in t, t = lattice reference time - z_flow / c). `plane="entrance"` (default) is the
+exact field-free back-drift of the trained plane (XTCAVF exit, TCAV off). Defaults are deterministic in
+the feasibility heads (witness present iff p_surv > 0.5; T as predicted); `witness="sample"`,
+`transmission="mixture"` and `latent="mean"` are opt-in. Knob values are not range-checked unless
+`validation="warn"|"error"` (as the virtual-accelerator injector surrogate).
+
+Lower level, for MBRL / training (differentiable):
+
+```python
+from twobunch_cnf.model import load_flow
+flow = load_flow("<ckpt>")                           # eval mode
+obs = flow.observables(knobs_norm, n=1024)           # knobs_norm: (B, n_knob) in the ckpt's [0, 1] frame
+```
+
+`twobunch_cnf.artifacts.flow_knob_space(flow)` is a checkpoint's knob frame,
+`twobunch_cnf.charges.injected_charges_nC` the per-bunch injected charge, and `twobunch_cnf.beam_io`
+the ParticleGroup -> (n, 6) cloud convention used by preprocessing.
+
+## Bundles
+
+`src/twobunch_cnf/resources/<name>/`: `model.ckpt` (converted, slim: weights + hparams), `norm.json`,
+`run.json` (training provenance) and `bundle.yaml` (checkpoint sha256; knob table in frame order with
+bounds, baseline, unit and description; the handoff element's reference values per plane; the measured
+S2E clock offset; provenance). Shipped: `c_b3_ema` (37 knobs, XTCAVF, beam latent 8). Export a new
+one with `scripts/export_bundle.py` (knob units from `configs/knob_meta.yaml`) and write its golden
+with `scripts/make_golden.py`; both need twobunch-s2e-rl on `PYTHONPATH`.
 
 ## Checkpoints from twobunch-s2e-rl
 

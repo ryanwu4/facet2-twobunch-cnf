@@ -1,0 +1,310 @@
+name: c_b3_ema
+description: 'C_B3 with EMA weights: 37-knob two-bunch flow at XTCAVF (beam latent 8, SW + log-sigma_z, paired-injector
+  loss)'
+created: 2026-10-28T16:24:40-0700
+package_version: 0.1.0
+treaty_point: XTCAVF
+checkpoint:
+  file: model.ckpt
+  sha256: 3c74914516afd68e812659bec48f1c730d6c466fe0994215633538e6482808db
+  slim: true
+  source: trained/xtcav23e_inj_covB2_C_B3_2026-10-21/checkpoints/final_ema.ckpt
+  source_sha256: 36f85b2b47c5bf9d16b423aa2f000377e363f928deac598fb554e3b80e790387
+norm: norm.json
+training_run: run.json
+provenance:
+  source_repo: twobunch-s2e-rl
+  source_repo_hash_at_export: f05456a492c6bcddb6821a7e33c7a0f17434cdcf
+  training_git_hash: fb11e2f18edae9562bc56dd3eecf9696d3d3bfc1
+  training_parents:
+  - processed/xtcav23e_inj_cov_sw_P4096_2026-10-21.h5
+  - trained/xtcav23e_inj_covB2_B3_rs1024_sw_lat_2026-10-21/checkpoints/final.ckpt
+knobs:
+- name: L1PhaseSet
+  low: -27.5
+  high: -18.5
+  baseline: -20.2889213421
+  unit: deg
+  confidence: code
+  description: L1 RF phase setting
+- name: L2PhaseSet
+  low: -41.5
+  high: -29.5
+  baseline: -35.5447801603
+  unit: deg
+  confidence: code
+  description: L2 RF phase setting
+- name: L1EnergyOffset
+  low: -3500000.0
+  high: 3500000.0
+  baseline: 0.0
+  unit: eV
+  confidence: code
+  description: L1 energy-gain offset
+- name: L2EnergyOffset
+  low: -48500000.0
+  high: 34900000.0
+  baseline: -6817565.553821569
+  unit: eV
+  confidence: code
+  description: L2 energy-gain offset
+- name: L3EnergyOffset
+  low: -43300000.0
+  high: 66700000.0
+  baseline: 11703527.144314773
+  unit: eV
+  confidence: code
+  description: L3 energy-gain offset
+- name: S1ELkG
+  low: 1880.5361328125
+  high: 2298.43310546875
+  baseline: 2089.4846449653
+  unit: kG/m
+  confidence: code
+  description: S1EL + S1ER sextupole integrated strength (set symmetrically)
+- name: S2ELkG
+  low: -4349.81201171875
+  high: -3558.93701171875
+  baseline: -3954.374460403
+  unit: kG/m
+  confidence: code
+  description: S2EL + S2ER sextupole integrated strength (set symmetrically)
+- name: S3ELkG
+  low: -1196.7525634765625
+  high: -979.1611938476562
+  baseline: -1087.9568814486
+  unit: kG/m
+  confidence: code
+  description: S3EL + S3ER sextupole integrated strength (set symmetrically)
+- name: Q5FFkG
+  low: -79.40742492675781
+  high: -64.96971130371094
+  baseline: -72.1885681152
+  unit: kG
+  confidence: code
+  description: Q5FF quadrupole integrated gradient (BDES convention)
+- name: Q4FFkG
+  low: -89.36787414550781
+  high: -73.11917114257812
+  baseline: -81.243522644
+  unit: kG
+  confidence: code
+  description: Q4FF quadrupole integrated gradient (BDES convention)
+- name: Q3FFkG
+  low: 89.31077575683594
+  high: 109.15760803222656
+  baseline: 99.2341918945
+  unit: kG
+  confidence: code
+  description: Q3FF quadrupole integrated gradient (BDES convention)
+- name: XC1FFkG
+  low: -0.002601778134703636
+  high: 0.007398222107440233
+  baseline: 0.0023982219
+  unit: kG*m
+  confidence: code
+  description: XC1FF horizontal corrector integrated field
+- name: XC3FFkG
+  low: -0.0034655786585062742
+  high: 0.0065344213508069515
+  baseline: 0.0015344214
+  unit: kG*m
+  confidence: code
+  description: XC3FF horizontal corrector integrated field
+- name: YC1FFkG
+  low: -0.010332118719816208
+  high: -0.0003321183903608471
+  baseline: -0.0053321184
+  unit: kG*m
+  confidence: code
+  description: YC1FF vertical corrector integrated field
+- name: YC2FFkG
+  low: -0.008551238104701042
+  high: 0.001448761555366218
+  baseline: -0.0035512385
+  unit: kG*m
+  confidence: code
+  description: YC2FF vertical corrector integrated field
+- name: S1EL_xOffset
+  low: 0.00015682680532336235
+  high: 0.0016568268183618784
+  baseline: 0.0009068268
+  unit: m
+  confidence: code
+  description: S1EL mover horizontal offset (Bmad X_OFFSET)
+- name: S1EL_yOffset
+  low: -0.0006184246158227324
+  high: 0.0008815753972157836
+  baseline: 0.0001315754
+  unit: m
+  confidence: code
+  description: S1EL mover vertical offset (Bmad Y_OFFSET)
+- name: S2EL_xOffset
+  low: -0.0011385829420760274
+  high: 0.00036141701275482774
+  baseline: -0.000388583
+  unit: m
+  confidence: code
+  description: S2EL mover horizontal offset (Bmad X_OFFSET)
+- name: S2EL_yOffset
+  low: -0.0006334225181490183
+  high: 0.0008665774948894978
+  baseline: 0.0001165775
+  unit: m
+  confidence: code
+  description: S2EL mover vertical offset (Bmad Y_OFFSET)
+- name: S2ER_xOffset
+  low: -0.0009179111220873892
+  high: 0.0005820888909511268
+  baseline: -0.0001679111
+  unit: m
+  confidence: code
+  description: S2ER mover horizontal offset (Bmad X_OFFSET)
+- name: S2ER_yOffset
+  low: -0.0022381667513400316
+  high: -0.0007381667965091765
+  baseline: -0.0014881668
+  unit: m
+  confidence: code
+  description: S2ER mover vertical offset (Bmad Y_OFFSET)
+- name: S1ER_xOffset
+  low: 0.000582330219913274
+  high: 0.002082330174744129
+  baseline: 0.0013323302
+  unit: m
+  confidence: code
+  description: S1ER mover horizontal offset (Bmad X_OFFSET)
+- name: S1ER_yOffset
+  low: -0.001868264633230865
+  high: -0.0003682645910885185
+  baseline: -0.0011182646
+  unit: m
+  confidence: code
+  description: S1ER mover vertical offset (Bmad Y_OFFSET)
+- name: L0BPhaseSet
+  low: -15.5
+  high: -14.5
+  baseline: -15.0
+  unit: deg
+  confidence: code
+  description: L0B RF phase setting
+- name: L0BEnergyOffset
+  low: -2408063.0
+  high: -2110563.0
+  baseline: -2259313.0
+  unit: eV
+  confidence: code
+  description: L0B energy-gain offset
+- name: laser_timing_ps
+  low: -0.30000001192092896
+  high: 0.30000001192092896
+  baseline: 0.0
+  unit: ps
+  confidence: code
+  description: common-mode laser-to-RF timing (added to both laser pulses' avg_t)
+- name: GUNF:rf_field_scale
+  low: 48351268.0
+  high: 48837208.0
+  baseline: 48594238.11176674
+  unit: V/m
+  confidence: inferred
+  description: Impact-T gun field-map scale (golden 119 MV/m / 2.44885 map normalization)
+- name: GUNF:theta0_deg
+  low: -61.20000076293945
+  high: -60.20000076293945
+  baseline: -60.7
+  unit: deg
+  confidence: code
+  description: Impact-T gun RF phase
+- name: distgen:t_dist:dists:d2:avg_t:value
+  low: 8.699999809265137
+  high: 9.300000190734863
+  baseline: 9.0
+  unit: ps
+  confidence: code
+  description: drive laser pulse delay (witness pulse d1 at 0 ps)
+- name: drive_fraction
+  low: 0.6600000262260437
+  high: 0.800000011920929
+  baseline: 0.75
+  unit: '1'
+  confidence: code
+  description: drive share of the injected charge (laser t_dist weights d2 = f, d1 = 1 - f)
+- name: distgen:total_charge:value
+  low: 1585.5999755859375
+  high: 1614.4000244140625
+  baseline: 1600.0
+  unit: pC
+  confidence: code
+  description: total injected bunch charge
+- name: L0AF_phase_offset_deg
+  low: -0.25
+  high: 0.25
+  baseline: 0.0
+  unit: deg
+  confidence: code
+  description: L0AF phase offset from its pinned reference
+- name: SOL10111:solenoid_field_scale
+  low: -0.24496875703334808
+  high: -0.24253125488758087
+  baseline: -0.24375
+  unit: '1'
+  confidence: inferred
+  description: Impact-T solenoid field scale (golden -0.39 / 1.6; SOL_PV_TO_SIM = 1.6)
+- name: distgen:r_dist:sigma_xy:value
+  low: 1.4601999521255493
+  high: 1.5197999477386475
+  baseline: 1.49
+  unit: mm
+  confidence: code
+  description: laser spot rms size on the cathode
+- name: distgen:r_dist:truncation_radius:value
+  low: 2.469599962234497
+  high: 2.5703999996185303
+  baseline: 2.52
+  unit: mm
+  confidence: code
+  description: laser spot truncation radius
+- name: distgen:start:MTE:value
+  low: 360.0
+  high: 440.0
+  baseline: 400.0
+  unit: meV
+  confidence: code
+  description: cathode mean transverse energy
+- name: sigma_t_ps
+  low: 1.1466000080108643
+  high: 1.1934000253677368
+  baseline: 1.17
+  unit: ps
+  confidence: code
+  description: rms duration of both laser pulses
+handoff:
+  element: XTCAVF
+  trained_plane: exit
+  species: electron
+  element_length_m: 1.0334498
+  e_tot_eV: 9999121053.184004
+  p0c_eV: 9999121040.12686
+  planes:
+    exit:
+      s_m: 987.131388761613
+      ref_time_s: 3.29273295892451e-06
+    entrance:
+      s_m: 986.0979389616131
+      ref_time_s: 3.2892857414453113e-06
+  source:
+    segment_spec: segment_baseline.json
+    lattice: FACET2-S2E (via PyTao)
+    setlattice_config: setLattice_configs/2024-10-14_twoBunch_baseline.yml
+    optics: baseline
+  s2e_clock_offset:
+    median_s: -1.378263774970356e-08
+    p5_s: -1.3782914392024595e-08
+    p95_s: -1.3782388434067497e-08
+    n_files: 180
+    note: 'S2E saved beams'' charge-weighted mean arrival minus the lattice reference time at the trained plane:
+      a constant clock offset of the input beam (the knob-dependent part is the p5-p95 spread). Exports use the
+      lattice reference time (bunch mean on the reference particle).'
+  note: Reference values are FACET2-S2E's. The facet2-lattice (virtual-accelerator) values at this element are unverified
+    (its HEAD needs a newer Bmad than 20250811), and there XTCAVF is an lcavity, not a crab_cavity.
