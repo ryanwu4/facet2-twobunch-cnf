@@ -3,6 +3,7 @@
 Ported from twobunch-s2e-rl (src/twobunch_s2e_rl/rl/plants.py @ 7ac3617). The transmission heads
 predict surviving FRACTIONS; the charge at the treaty point is T x the injected charge returned here.
 """
+
 from __future__ import annotations
 
 import torch
@@ -25,7 +26,10 @@ def injected_charges_nC(norm: dict, knob_keys, knob_low, knob_high):
             phys = lambda j: lo[j].to(knobs_norm) + knobs_norm[:, j] * (hi[j] - lo[j]).to(knobs_norm)
             Q, f = phys(jq) / 1000.0, phys(jf)
             return Q * f * 1.001, Q * (1 - f) * 0.999
+
         return q
     qd, qw = float(norm["drive_full_charge_nC"]), float(norm["witness_full_charge_nC"])
-    return lambda knobs_norm: (torch.full(knobs_norm.shape[:1], qd, device=knobs_norm.device),
-                               torch.full(knobs_norm.shape[:1], qw, device=knobs_norm.device))
+    return lambda knobs_norm: (
+        torch.full(knobs_norm.shape[:1], qd, device=knobs_norm.device),
+        torch.full(knobs_norm.shape[:1], qw, device=knobs_norm.device),
+    )

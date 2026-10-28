@@ -10,6 +10,7 @@
 Truth comes from the table's own (standardized) particle subsamples, de-standardized with the
 model's scalers (the dataset is standardized with the same ones).
 """
+
 from __future__ import annotations
 
 import lightning as L
@@ -30,11 +31,11 @@ class PairedDeltaMetrics(L.Callback):
             key = np.asarray(h["pair_key"][...]) if "pair_key" in h else np.full(len(ds), -1)
             ref = np.asarray(h["pair_ref"][...]) if "pair_ref" in h else np.zeros(len(ds), bool)
         camp = ds.row_campaign
-        ok = (ds.drive_density.numpy() & ds.witness_density.numpy())
+        ok = ds.drive_density.numpy() & ds.witness_density.numpy()
         pairs, by = [], {}
         for i in val:
             if key[i] >= 0 and ok[i]:
-                by.setdefault(int(key[i]), {})["ref" if ref[i] else "pt"] = i     # keys are globally unique
+                by.setdefault(int(key[i]), {})["ref" if ref[i] else "pt"] = i  # keys are globally unique
         for d in by.values():
             if len(d) == 2:
                 pairs.append((d["pt"], d["ref"]))
@@ -45,7 +46,7 @@ class PairedDeltaMetrics(L.Callback):
     @torch.no_grad()
     def _true_spacing(self, model, rows):
         ds = self.dm.full
-        if getattr(ds, "has_truth", False):                 # full-particle truth (2026-10-21), table subsample as fallback
+        if getattr(ds, "has_truth", False):  # full-particle truth (2026-10-21), table subsample as fallback
             t = ds.truth_spacing[rows].double().numpy()
             if np.isfinite(t).all():
                 return t
@@ -63,7 +64,7 @@ class PairedDeltaMetrics(L.Callback):
         kn = self.dm.full.knobs[rows].to(model.device)
         out = []
         for b in range(0, len(rows), 64):
-            o = model.observables(kn[b:b + 64], n=self.n, z_drive=zd, z_witness=zw)
+            o = model.observables(kn[b : b + 64], n=self.n, z_drive=zd, z_witness=zw)
             out.append(o["bunch_spacing"].double().cpu())
         return torch.cat(out).numpy()
 
@@ -79,7 +80,7 @@ class PairedDeltaMetrics(L.Callback):
             dt = self._true_spacing(model, pt) - self._true_spacing(model, rf)
             dp = self._pred_spacing(model, pt) - self._pred_spacing(model, rf)
             model.log("val_paired_delta_rms_um", float(1e6 * np.sqrt(np.mean((dp - dt) ** 2))))
-            model.log("val_paired_delta_signal_rms_um", float(1e6 * np.sqrt(np.mean(dt ** 2))))
+            model.log("val_paired_delta_signal_rms_um", float(1e6 * np.sqrt(np.mean(dt**2))))
         if self.old:
             e = self._pred_spacing(model, self.old) - self._true_spacing(model, self.old)
             model.log("val_old_spacing_mae_um", float(1e6 * np.mean(np.abs(e))))

@@ -3,16 +3,20 @@
 Synthetic Gaussian clouds with a prescribed trace-space beta let us check beta/BMAG against
 the closed form, slice-vs-projected consistency, and gradient flow (for MBRL). No Tao needed.
 """
+
 import math
 
 import torch
 
 from twobunch_cnf.properties import (
-    twiss_bmag, slice_twiss_bmag, per_bunch, _bmag,
+    twiss_bmag,
+    slice_twiss_bmag,
+    per_bunch,
+    _bmag,
 )
 
-P0 = 1.0e10        # eV/c reference momentum (pz)
-EPS = 1.0e-9       # geometric emittance scale (m-rad)
+P0 = 1.0e10  # eV/c reference momentum (pz)
+EPS = 1.0e-9  # geometric emittance scale (m-rad)
 
 
 def _cloud(beta_x, beta_y, n=20000, seed=0):
@@ -42,7 +46,7 @@ def test_projected_twiss_and_bmag():
     assert abs(tb["bmag_x"][0].item() - 1.0) < 0.03
     assert abs(tb["beta_x"][1].item() - 2.0) < 0.1
     assert abs(tb["bmag_x"][1].item() - 2.125) < 0.1
-    assert abs(tb["alpha_x"][0].item()) < 0.05      # uncorrelated -> alpha ~ 0
+    assert abs(tb["alpha_x"][0].item()) < 0.05  # uncorrelated -> alpha ~ 0
 
 
 def test_slice_matches_projected_when_z_independent():
@@ -56,8 +60,7 @@ def test_slice_matches_projected_when_z_independent():
 
 def test_per_bunch_exposes_new_keys():
     out = per_bunch(_cloud(0.5, 0.5, n=4096, seed=4).unsqueeze(0))
-    for k in ("bmag_x", "bmag_y", "beta_x", "slice_beta_x_core",
-              "slice_bmag_x_core", "slice_bmag_max"):
+    for k in ("bmag_x", "bmag_y", "beta_x", "slice_beta_x_core", "slice_bmag_x_core", "slice_bmag_max"):
         assert k in out and out[k].shape == (1,)
 
 

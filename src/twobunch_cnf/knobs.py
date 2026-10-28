@@ -7,6 +7,7 @@ tables, which may have changed since the artifact was made (L2PhaseSet was widen
 [-38, -34] to [-40, -34] after the 8-knob campaigns; see twobunch-s2e-rl docs/architecture_plan.md).
 Named knob tables (for new campaigns) live in twobunch-s2e-rl (datagen/sweep_params.py).
 """
+
 from __future__ import annotations
 
 import json
@@ -21,7 +22,7 @@ class KnobSpace:
     keys: tuple[str, ...]
     low: tuple[float, ...]
     high: tuple[float, ...]
-    baseline: dict[str, float] = field(default_factory=dict)   # optional; may cover a subset
+    baseline: dict[str, float] = field(default_factory=dict)  # optional; may cover a subset
 
     def __post_init__(self):
         if not (len(self.keys) == len(self.low) == len(self.high)):
@@ -32,8 +33,7 @@ class KnobSpace:
     # ---- construction ------------------------------------------------------------------------
     @classmethod
     def from_lists(cls, keys, low, high, baseline=None) -> "KnobSpace":
-        return cls(tuple(keys), tuple(float(v) for v in low), tuple(float(v) for v in high),
-                   dict(baseline or {}))
+        return cls(tuple(keys), tuple(float(v) for v in low), tuple(float(v) for v in high), dict(baseline or {}))
 
     @classmethod
     def from_norm_json(cls, path) -> "KnobSpace":
@@ -42,8 +42,12 @@ class KnobSpace:
         return cls.from_lists(d["knob_keys"], d["knob_low"], d["knob_high"])
 
     def to_dict(self) -> dict:
-        return {"knob_keys": list(self.keys), "knob_low": list(self.low),
-                "knob_high": list(self.high), "baseline": dict(self.baseline)}
+        return {
+            "knob_keys": list(self.keys),
+            "knob_low": list(self.low),
+            "knob_high": list(self.high),
+            "baseline": dict(self.baseline),
+        }
 
     @classmethod
     def from_dict(cls, d: dict) -> "KnobSpace":
@@ -56,11 +60,14 @@ class KnobSpace:
 
     def _span(self, like):
         lo, hi = np.asarray(self.low), np.asarray(self.high)
-        span = np.where(hi > lo, hi - lo, 1.0)            # degenerate (fixed) knob -> span 1
+        span = np.where(hi > lo, hi - lo, 1.0)  # degenerate (fixed) knob -> span 1
         if _is_torch(like):
             import torch
-            return (torch.as_tensor(lo, dtype=like.dtype, device=like.device),
-                    torch.as_tensor(span, dtype=like.dtype, device=like.device))
+
+            return (
+                torch.as_tensor(lo, dtype=like.dtype, device=like.device),
+                torch.as_tensor(span, dtype=like.dtype, device=like.device),
+            )
         return lo, span
 
     def normalize(self, phys):
@@ -98,9 +105,12 @@ class KnobSpace:
 
     def subset(self, keys) -> "KnobSpace":
         idx = [self.index(k) for k in keys]
-        return KnobSpace.from_lists([self.keys[i] for i in idx], [self.low[i] for i in idx],
-                                    [self.high[i] for i in idx],
-                                    {k: self.baseline[k] for k in keys if k in self.baseline})
+        return KnobSpace.from_lists(
+            [self.keys[i] for i in idx],
+            [self.low[i] for i in idx],
+            [self.high[i] for i in idx],
+            {k: self.baseline[k] for k in keys if k in self.baseline},
+        )
 
     def contains(self, phys, tol: float = 1e-9) -> np.ndarray:
         """Boolean (...,) — inside the box (per row), with a relative tolerance on the span."""

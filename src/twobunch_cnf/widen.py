@@ -12,6 +12,7 @@ reproduces the old layer EXACTLY. Knobs that are new get zero columns, so the wi
 them until it is fine-tuned on data that varies them. Columns are matched by NAME; a knob dropped
 from the new space is an error (use the campaign knob-drop rule upstream instead).
 """
+
 from __future__ import annotations
 
 import copy
@@ -38,7 +39,7 @@ def _remap_first_layer(lin: torch.nn.Linear, old: KnobSpace, new: KnobSpace, n_e
         W_new[:, j] = W[:, i] * s
         b_new += W[:, i] * o
     if n_extra:
-        W_new[:, new.n:] = W[:, old.n:]
+        W_new[:, new.n :] = W[:, old.n :]
     return W_new.to(lin.weight.dtype), b_new.to(lin.bias.dtype)
 
 
@@ -48,8 +49,12 @@ def widen_conditioning(flow: TwoBunchFlow, new_space: KnobSpace) -> TwoBunchFlow
     if missing:
         raise ValueError(f"new knob space drops {missing}; widening only adds knobs")
     hp = dict(flow.hparams)
-    hp.update(condition_dim=new_space.n, knob_low=list(new_space.low), knob_high=list(new_space.high),
-              knob_keys=list(new_space.keys))
+    hp.update(
+        condition_dim=new_space.n,
+        knob_low=list(new_space.low),
+        knob_high=list(new_space.high),
+        knob_keys=list(new_space.keys),
+    )
     wide = TwoBunchFlow(**hp)
     state = copy.deepcopy(flow.state_dict())
     knob_layers = [("encoder.0", 2), ("feas_head.0", 0), ("t_full_head.0", 0)]

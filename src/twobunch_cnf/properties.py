@@ -14,6 +14,7 @@ Two conventions to note vs the campaign's getBeamSpecs quantities:
   spacing below is signed to match the campaign (drive - witness in z == witness - drive
   in arrival time), i.e. positive when the witness trails the drive.
 """
+
 from __future__ import annotations
 
 import torch
@@ -48,7 +49,7 @@ def norm_emits(parts: torch.Tensor) -> dict[str, torch.Tensor]:
     return {
         "norm_emit_x": g["x_xp"] / MC2,
         "norm_emit_y": g["y_yp"] / MC2,
-        "norm_emit_4d": g["fourd"] / (MC2 ** 2),
+        "norm_emit_4d": g["fourd"] / (MC2**2),
     }
 
 
@@ -82,12 +83,17 @@ def twiss_bmag(parts: torch.Tensor, beta0: float = 0.5, alpha0: float = 0.0):
     pz = parts[..., 5].clamp_min(1.0)
     bx, ax, _ = _trace_twiss(parts[..., 0], parts[..., 3] / pz)
     by, ay, _ = _trace_twiss(parts[..., 1], parts[..., 4] / pz)
-    return {"beta_x": bx, "alpha_x": ax, "beta_y": by, "alpha_y": ay,
-            "bmag_x": _bmag(bx, ax, beta0, alpha0), "bmag_y": _bmag(by, ay, beta0, alpha0)}
+    return {
+        "beta_x": bx,
+        "alpha_x": ax,
+        "beta_y": by,
+        "alpha_y": ay,
+        "bmag_x": _bmag(bx, ax, beta0, alpha0),
+        "bmag_y": _bmag(by, ay, beta0, alpha0),
+    }
 
 
-def slice_twiss_bmag(parts: torch.Tensor, n_slices: int = 5,
-                     beta0: float = 0.5, alpha0: float = 0.0):
+def slice_twiss_bmag(parts: torch.Tensor, n_slices: int = 5, beta0: float = 0.5, alpha0: float = 0.0):
     """Per-slice (z-binned, equal-count) Twiss/BMAG -> core-slice beta/BMAG + worst-slice BMAG.
     Projected BMAG over the chirped two-bunch beam is inflated, so the per-slice (esp. core,
     highest-current) value is the operational matching metric (Yiheng: witness slice-beta at
@@ -97,17 +103,22 @@ def slice_twiss_bmag(parts: torch.Tensor, n_slices: int = 5,
     order = torch.argsort(parts[..., 2], dim=1)[:, : s * n_slices]
     g = torch.gather(parts, 1, order.unsqueeze(-1).expand(-1, -1, 6)).reshape(B, n_slices, s, 6)
     pz = g[..., 5].clamp_min(1.0)
-    bx, ax, _ = _trace_twiss(g[..., 0], g[..., 3] / pz)   # (B, n_slices)
+    bx, ax, _ = _trace_twiss(g[..., 0], g[..., 3] / pz)  # (B, n_slices)
     by, ay, _ = _trace_twiss(g[..., 1], g[..., 4] / pz)
     bmx, bmy = _bmag(bx, ax, beta0, alpha0), _bmag(by, ay, beta0, alpha0)
     core = n_slices // 2
-    return {"slice_beta_x_core": bx[:, core], "slice_beta_y_core": by[:, core],
-            "slice_bmag_x_core": bmx[:, core], "slice_bmag_y_core": bmy[:, core],
-            "slice_bmag_max": torch.maximum(bmx, bmy).amax(dim=1)}
+    return {
+        "slice_beta_x_core": bx[:, core],
+        "slice_beta_y_core": by[:, core],
+        "slice_bmag_x_core": bmx[:, core],
+        "slice_bmag_y_core": bmy[:, core],
+        "slice_bmag_max": torch.maximum(bmx, bmy).amax(dim=1),
+    }
 
 
-def per_bunch(parts: torch.Tensor, beta0: float = 0.5, alpha0: float = 0.0,
-              n_slices: int = 5) -> dict[str, torch.Tensor]:
+def per_bunch(
+    parts: torch.Tensor, beta0: float = 0.5, alpha0: float = 0.0, n_slices: int = 5
+) -> dict[str, torch.Tensor]:
     """Per-bunch scalar observables (all (B,)). Includes projected + sliced Twiss/BMAG for the
     PENT matching objective (vs golden beta0=0.5 m, alpha0=0); raw slice-beta is exposed so the
     reward can target an arbitrary witness slice-beta directly."""

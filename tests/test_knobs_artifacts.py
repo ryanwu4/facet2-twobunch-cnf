@@ -1,4 +1,5 @@
 """KnobSpace frame maps + artifact helpers (resolve_ckpt, run.json, a checkpoint's knob frame)."""
+
 import json
 
 import numpy as np
@@ -20,7 +21,7 @@ def test_normalize_roundtrip_torch_and_degenerate_knob():
     torch = pytest.importorskip("torch")
     x = torch.tensor([[0.5, 5.0, 5.0]], dtype=torch.float64)
     n = KS.normalize(x)
-    assert torch.is_tensor(n) and float(n[0, 2]) == 0.0     # fixed knob -> span 1, value 0
+    assert torch.is_tensor(n) and float(n[0, 2]) == 0.0  # fixed knob -> span 1, value 0
     assert torch.allclose(KS.denormalize(n), x)
 
 
@@ -50,8 +51,14 @@ def _touch(d, names):
 
 
 def test_resolve_ckpt_numeric_and_negative_val_loss(tmp_path):
-    _touch(tmp_path, ["best-epoch=99-val_loss=0.9.ckpt", "best-epoch=493-val_loss=0.5126.ckpt",
-                      "best-epoch=144-val_loss=-1.3655.ckpt"])
+    _touch(
+        tmp_path,
+        [
+            "best-epoch=99-val_loss=0.9.ckpt",
+            "best-epoch=493-val_loss=0.5126.ckpt",
+            "best-epoch=144-val_loss=-1.3655.ckpt",
+        ],
+    )
     assert resolve_ckpt(str(tmp_path / "best-*.ckpt")).endswith("val_loss=-1.3655.ckpt")
 
 
@@ -87,9 +94,11 @@ def test_flow_knob_space_needs_recorded_keys_and_treaty_point():
     pytest.importorskip("torch")
     from twobunch_cnf.artifacts import flow_knob_space, flow_treaty_point
     from twobunch_cnf.model import TwoBunchFlow
+
     keys, lo, hi = ["a", "b", "c"], [0.0, -1.0, 2.0], [1.0, 1.0, 3.0]
-    flow = TwoBunchFlow(condition_dim=3, n_layers=2, hidden_dim=16, knob_low=lo, knob_high=hi,
-                        knob_keys=keys, treaty_point="XTCAVF")
+    flow = TwoBunchFlow(
+        condition_dim=3, n_layers=2, hidden_dim=16, knob_low=lo, knob_high=hi, knob_keys=keys, treaty_point="XTCAVF"
+    )
     ks = flow_knob_space(flow)
     assert list(ks.keys) == keys and flow_treaty_point(flow) == "XTCAVF"
     np.testing.assert_allclose(ks.low, lo, rtol=1e-6)

@@ -4,6 +4,7 @@
 
 Writes <--out>/{parity.png, phase_space.png, metrics.json}. --processed and --out are required.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -11,6 +12,7 @@ import json
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -55,10 +57,11 @@ def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
 
     # gather val tensors
     knobs = torch.stack([val[i]["knobs"] for i in range(len(val))]).to(device)
-    flags = {k: torch.stack([val[i][k] for i in range(len(val))])
-             for k in ("drive_density", "witness_density", "witness_viable", "drive_present")}
-    fracs = {k: torch.stack([val[i][k] for i in range(len(val))])
-             for k in ("drive_frac", "witness_frac")}
+    flags = {
+        k: torch.stack([val[i][k] for i in range(len(val))])
+        for k in ("drive_density", "witness_density", "witness_viable", "drive_present")
+    }
+    fracs = {k: torch.stack([val[i][k] for i in range(len(val))]) for k in ("drive_frac", "witness_frac")}
     true_drive = torch.stack([val[i]["drive"] for i in range(len(val))]).to(device)
     true_witness = torch.stack([val[i]["witness"] for i in range(len(val))]).to(device)
 
@@ -96,16 +99,19 @@ def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
         lo, hi = np.percentile(np.concatenate([t, p]), [1, 99])
         ax.plot([lo, hi], [lo, hi], "k--", lw=1)
         if logp:
-            ax.set_xscale("log"); ax.set_yscale("log")
+            ax.set_xscale("log")
+            ax.set_yscale("log")
         # robust R^2 in (log) space
         tt = np.log10(t) if logp else t
         pp = np.log10(p) if logp else p
-        ss_res = np.sum((tt - pp) ** 2); ss_tot = np.sum((tt - tt.mean()) ** 2) + 1e-30
+        ss_res = np.sum((tt - pp) ** 2)
+        ss_tot = np.sum((tt - tt.mean()) ** 2) + 1e-30
         r2 = 1 - ss_res / ss_tot
         metrics[key] = {"r2": float(r2), "n": int(mask.sum())}
         ax.set_title(f"{label}\nR²={r2:.2f} (n={mask.sum()})", fontsize=10)
-        ax.set_xlabel("true"); ax.set_ylabel("surrogate")
-    for ax in axes.ravel()[len(PARITY_KEYS):]:
+        ax.set_xlabel("true")
+        ax.set_ylabel("surrogate")
+    for ax in axes.ravel()[len(PARITY_KEYS) :]:
         ax.axis("off")
     fig.suptitle("Surrogate vs truth (val split) — per-bunch & inter-bunch observables", fontsize=13)
     fig.tight_layout()
@@ -118,16 +124,16 @@ def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
     wv = flags["witness_viable"].cpu().numpy().astype(int)
     p_surv = pred["p_surv"].cpu().numpy()
     metrics["witness_viability_auc"] = float(roc_auc_score(wv, p_surv)) if wv.min() != wv.max() else None
-    metrics["T_drive_mae"] = float(np.abs(pred["T_drive"].cpu().numpy()[dd]
-                                          - fracs["drive_frac"].numpy()[dd]).mean())
+    metrics["T_drive_mae"] = float(np.abs(pred["T_drive"].cpu().numpy()[dd] - fracs["drive_frac"].numpy()[dd]).mean())
     wvb = flags["witness_viable"].cpu().numpy().astype(bool)
-    metrics["T_witness_mae"] = float(np.abs(pred["T_witness"].cpu().numpy()[wvb]
-                                            - fracs["witness_frac"].numpy()[wvb]).mean())
+    metrics["T_witness_mae"] = float(
+        np.abs(pred["T_witness"].cpu().numpy()[wvb] - fracs["witness_frac"].numpy()[wvb]).mean()
+    )
 
     # ---- phase-space overlay (first both-density val sample) ----
     j = int(np.argmax(both))
-    s_d = model.sample_bunch(knobs[j:j + 1], 0, n)[0].cpu().numpy()
-    s_w = model.sample_bunch(knobs[j:j + 1], 1, n)[0].cpu().numpy()
+    s_d = model.sample_bunch(knobs[j : j + 1], 0, n)[0].cpu().numpy()
+    s_w = model.sample_bunch(knobs[j : j + 1], 1, n)[0].cpu().numpy()
     rd, rw = td[j].cpu().numpy(), tw[j].cpu().numpy()
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
     for ax, (a, b, la, lb) in zip(axes, [(0, 2, "x [m]", "z [m]"), (0, 3, "x [m]", "px [eV/c]")]):
@@ -135,7 +141,8 @@ def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
         ax.scatter(s_d[:, a], s_d[:, b], s=3, alpha=0.3, color="#0b3d66", marker="x", label="drive flow")
         ax.scatter(rw[:, a], rw[:, b], s=3, alpha=0.3, color="#d62728", label="witness true")
         ax.scatter(s_w[:, a], s_w[:, b], s=3, alpha=0.3, color="#7a1518", marker="x", label="witness flow")
-        ax.set_xlabel(la); ax.set_ylabel(lb)
+        ax.set_xlabel(la)
+        ax.set_ylabel(lb)
     axes[0].legend(fontsize=8, markerscale=2)
     fig.suptitle(f"Phase-space overlay — val sample idx {j}", fontsize=12)
     fig.tight_layout()

@@ -8,6 +8,7 @@ Two-bunch beams follow the FACET2-S2E convention: one ParticleGroup whose drive 
 the two unique per-particle weights (drive = higher weight, a +-0.1% tag), with the charge ratio in
 the macroparticle counts.
 """
+
 from __future__ import annotations
 
 import numpy as np

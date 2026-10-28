@@ -13,6 +13,7 @@ experiment branches off it), so an unconverted checkpoint fails to load. `migrat
 
   python -m twobunch_cnf.migrate SRC.ckpt --out DST.ckpt
 """
+
 from __future__ import annotations
 
 import argparse
@@ -65,13 +66,16 @@ def migrate_checkpoint(ckpt: dict, source: str = "") -> dict:
     hp = dict(ckpt["hyper_parameters"])
     missing = [k for k in REQUIRED if not hp.get(k)]
     if missing:
-        raise ValueError(f"{source}: checkpoint records no {missing}; only checkpoints that record their "
-                         "knob frame and treaty point are supported")
-    used = {k: hp.get(k, old) for k, (want, old) in REMOVED.items()
-            if _norm(hp.get(k, old)) != _norm(want)}
+        raise ValueError(
+            f"{source}: checkpoint records no {missing}; only checkpoints that record their "
+            "knob frame and treaty point are supported"
+        )
+    used = {k: hp.get(k, old) for k, (want, old) in REMOVED.items() if _norm(hp.get(k, old)) != _norm(want)}
     if used:
-        raise ValueError(f"{source}: uses option(s) removed from main {used}; load it from "
-                         "archive/unpruned-7ac3617 or an experiment branch off it")
+        raise ValueError(
+            f"{source}: uses option(s) removed from main {used}; load it from "
+            "archive/unpruned-7ac3617 or an experiment branch off it"
+        )
     known = set(inspect.signature(TwoBunchFlow.__init__).parameters) - {"self"}
     unknown = sorted(set(hp) - known - set(REMOVED))
     if unknown:
@@ -80,9 +84,12 @@ def migrate_checkpoint(ckpt: dict, source: str = "") -> dict:
     TwoBunchFlow(**new_hp).load_state_dict(ckpt["state_dict"], strict=True)
     out = dict(ckpt)
     out["hyper_parameters"] = new_hp
-    out["twobunch_cnf_migration"] = {"source": str(source), "removed": sorted(k for k in hp if k in REMOVED),
-                                     "package_version": __version__,
-                                     "created": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+    out["twobunch_cnf_migration"] = {
+        "source": str(source),
+        "removed": sorted(k for k in hp if k in REMOVED),
+        "package_version": __version__,
+        "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
     return out
 
 

@@ -4,6 +4,7 @@ Ported from twobunch-s2e-rl (src/twobunch_s2e_rl/artifacts.py @ 7ac3617). Only c
 record their knob names (`knob_keys`) and `treaty_point` are supported here; the legacy tables that
 fill those in for older 8/23/26-knob checkpoints stay in twobunch-s2e-rl.
 """
+
 from __future__ import annotations
 
 import glob
@@ -40,7 +41,7 @@ def resolve_ckpt(pattern: str) -> str:
         if m_loss:
             scored.append((float(m_loss.group(1)), f))
         elif m_rew:
-            scored.append((-float(m_rew.group(1)), f))      # higher reward is better
+            scored.append((-float(m_rew.group(1)), f))  # higher reward is better
         else:
             raise ValueError(f"cannot rank {name!r} (no val_loss/reward in name); pass a path")
     scored.sort()
@@ -51,10 +52,10 @@ def resolve_ckpt(pattern: str) -> str:
 
 # ---- run.json provenance -----------------------------------------------------------------------
 
+
 def _git(*args, cwd=None) -> str | None:
     try:
-        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True,
-                              check=True).stdout.strip()
+        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None
 
@@ -68,8 +69,10 @@ def package_root() -> Path:
 def git_state(path=None) -> dict:
     path = str(path or package_root())
     # tracked changes only: untracked result folders don't change the code that ran
-    return {"git_hash": _git("rev-parse", "HEAD", cwd=path),
-            "git_dirty": bool(_git("status", "--porcelain", "--untracked-files=no", cwd=path))}
+    return {
+        "git_hash": _git("rev-parse", "HEAD", cwd=path),
+        "git_dirty": bool(_git("status", "--porcelain", "--untracked-files=no", cwd=path)),
+    }
 
 
 def facet2_s2e_hash() -> str | None:
@@ -81,17 +84,23 @@ def facet2_s2e_hash() -> str | None:
     return _git("rev-parse", "HEAD", cwd=root) if root.exists() else None
 
 
-def write_run_json(out_dir, kind: str, config: dict, parents=(), overwrite: bool = False,
-                   **extra) -> Path:
+def write_run_json(out_dir, kind: str, config: dict, parents=(), overwrite: bool = False, **extra) -> Path:
     """Write <out_dir>/run.json: what this artifact is, how it was made, and from what.
     Refuses to overwrite an existing run.json unless overwrite=True."""
     out = Path(out_dir) / "run.json"
     if out.exists() and not overwrite:
         raise FileExistsError(f"{out} exists (pass overwrite=True / --overwrite to replace)")
     out.parent.mkdir(parents=True, exist_ok=True)
-    rec = {"kind": kind, "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"), **git_state(),
-           "package_version": __version__, "facet2_s2e_hash": facet2_s2e_hash(), "config": config,
-           "parents": [str(p) for p in parents], **extra}
+    rec = {
+        "kind": kind,
+        "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        **git_state(),
+        "package_version": __version__,
+        "facet2_s2e_hash": facet2_s2e_hash(),
+        "config": config,
+        "parents": [str(p) for p in parents],
+        **extra,
+    }
     out.write_text(json.dumps(rec, indent=2, default=str))
     return out
 
@@ -103,13 +112,17 @@ def read_run_json(path) -> dict:
 
 # ---- a checkpoint's knob frame -----------------------------------------------------------------
 
+
 def flow_knob_space(flow):
     """KnobSpace of a loaded TwoBunchFlow: names from its hparams, bounds from its own buffers."""
     from .knobs import KnobSpace
+
     keys = getattr(flow.hparams, "knob_keys", None)
     if not keys:
-        raise ValueError("checkpoint records no knob_keys; only checkpoints that record their knob names "
-                         "are supported (older ones: twobunch-s2e-rl artifacts.LEGACY_KNOB_KEYS)")
+        raise ValueError(
+            "checkpoint records no knob_keys; only checkpoints that record their knob names "
+            "are supported (older ones: twobunch-s2e-rl artifacts.LEGACY_KNOB_KEYS)"
+        )
     return KnobSpace.from_lists(keys, flow.knob_low.tolist(), flow.knob_high.tolist())
 
 

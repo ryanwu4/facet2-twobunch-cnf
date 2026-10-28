@@ -1,4 +1,5 @@
 """Data-contract helpers: two-bunch ParticleGroup split / coordinate stacking, and injected charges."""
+
 import numpy as np
 import pytest
 
@@ -11,10 +12,15 @@ def _two_bunch_group(n_d=30, n_w=10):
     rng = np.random.default_rng(0)
     n = n_d + n_w
     data = {k: rng.normal(size=n) for k in ("x", "y", "px", "py")}
-    data.update(z=np.zeros(n), t=rng.normal(scale=1e-13, size=n), pz=np.full(n, 1e10),
-                status=np.ones(n, dtype=int), species="electron",
-                weight=np.r_[np.full(n_d, 1e-14 * 1.001), np.full(n_w, 1e-14 * 0.999)])
-    data["x"][:n_d] += 1.0                             # tag the drive by position too
+    data.update(
+        z=np.zeros(n),
+        t=rng.normal(scale=1e-13, size=n),
+        pz=np.full(n, 1e10),
+        status=np.ones(n, dtype=int),
+        species="electron",
+        weight=np.r_[np.full(n_d, 1e-14 * 1.001), np.full(n_w, 1e-14 * 0.999)],
+    )
+    data["x"][:n_d] += 1.0  # tag the drive by position too
     return pmd.ParticleGroup(data=data)
 
 
@@ -47,6 +53,7 @@ def test_subsample_no_replacement():
 def test_injected_charges_per_sample_and_constant():
     torch = pytest.importorskip("torch")
     from twobunch_cnf.charges import injected_charges_nC
+
     keys = ["L2PhaseSet", "drive_fraction", "distgen:total_charge:value"]
     lo, hi = [-40.0, 0.6, 1500.0], [-34.0, 0.8, 1700.0]
     q = injected_charges_nC({"transmission": "per_sample"}, keys, lo, hi)

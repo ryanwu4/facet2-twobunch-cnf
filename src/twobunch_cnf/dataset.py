@@ -10,6 +10,7 @@ Loads processed/twobunch_flow.h5 into memory and serves per-sample dicts:
 Normalization mirrors the photoinjector flow: knobs min-max to [0,1] (the RL box),
 particles per-dim per-bunch StandardScaler (raw scales span ~x:1e-4 m to pz:1e10 eV/c).
 """
+
 from __future__ import annotations
 
 import json
@@ -32,7 +33,8 @@ def group_split(groups, val_fraction: float, seed: int):
     for i in order:
         if n >= target:
             break
-        val_g.add(uniq[i]); n += sizes[uniq[i]]
+        val_g.add(uniq[i])
+        n += sizes[uniq[i]]
     is_val = np.isin(groups, list(val_g))
     return np.flatnonzero(~is_val).tolist(), np.flatnonzero(is_val).tolist()
 
@@ -50,14 +52,22 @@ class TwoBunchFlowDataset(Dataset):
     from a checkpoint: the model decodes with its own scalers, so the training targets must be
     standardized with exactly those, or the flow learns in one frame and decodes in another."""
 
-    def __init__(self, processed_h5: str, norm_json: str | None = None, scaler: dict | None = None,
-                 truth_h5: str | None = None, resample_p: int | None = None):
+    def __init__(
+        self,
+        processed_h5: str,
+        norm_json: str | None = None,
+        scaler: dict | None = None,
+        truth_h5: str | None = None,
+        resample_p: int | None = None,
+    ):
         with h5py.File(processed_h5, "r") as h:
-            knobs = _load(h, "knobs").astype(np.float32)              # (N,8)
-            drive = _load(h, "drive_parts").astype(np.float32)        # (N,P,6)
-            witness = _load(h, "witness_parts").astype(np.float32)    # (N,P,6)
-            masks = {k: _load(h, k).astype(bool) for k in
-                     ("drive_present", "witness_viable", "drive_density", "witness_density")}
+            knobs = _load(h, "knobs").astype(np.float32)  # (N,8)
+            drive = _load(h, "drive_parts").astype(np.float32)  # (N,P,6)
+            witness = _load(h, "witness_parts").astype(np.float32)  # (N,P,6)
+            masks = {
+                k: _load(h, k).astype(bool)
+                for k in ("drive_present", "witness_viable", "drive_density", "witness_density")
+            }
             dfrac = _load(h, "drive_frac").astype(np.float32)
             wfrac = _load(h, "witness_frac").astype(np.float32)
 
@@ -65,16 +75,14 @@ class TwoBunchFlowDataset(Dataset):
         with open(norm_json) as f:
             norm = json.load(f)
         if scaler is not None:
-            norm = {**norm, **{k: [float(v) for v in scaler[k]] for k in SCALER_KEYS},
-                    "scaler_source": "checkpoint"}
+            norm = {**norm, **{k: [float(v) for v in scaler[k]] for k in SCALER_KEYS}, "scaler_source": "checkpoint"}
         self.norm = norm
         groups, holdout = None, None
         with h5py.File(processed_h5, "r") as h:
             names = str(h.attrs.get("campaigns", "")).split(",")
             idx = np.asarray(h["idx"][...]) if "idx" in h else np.arange(len(knobs))
             self.row_campaign = np.asarray(h["campaign"][...]) if "campaign" in h else np.zeros(len(knobs), int)
-            self.row_keys = [f"{names[c] if c < len(names) else ''}/{int(i)}"
-                             for c, i in zip(self.row_campaign, idx)]
+            self.row_keys = [f"{names[c] if c < len(names) else ''}/{int(i)}" for c, i in zip(self.row_campaign, idx)]
             if "group" in h:
                 groups = np.asarray(h["group"][...])
             if "holdout" in h:
@@ -126,26 +134,44 @@ class TwoBunchFlowDataset(Dataset):
     def __getitem__(self, i):
         d, w = self.drive[i], self.witness[i]
         if self.resample_p is not None:
-            d = d[torch.randperm(self.P)[:self.resample_p]]
-            w = w[torch.randperm(self.P)[:self.resample_p]]
+            d = d[torch.randperm(self.P)[: self.resample_p]]
+            w = w[torch.randperm(self.P)[: self.resample_p]]
         extra = {}
         if self.has_truth:
-            extra = {"drive_ctrue": self.truth_drive_c[i], "witness_ctrue": self.truth_witness_c[i],
-                     "drive_sztrue": self.truth_drive_sigma_z[i]}
+            extra = {
+                "drive_ctrue": self.truth_drive_c[i],
+                "witness_ctrue": self.truth_witness_c[i],
+                "drive_sztrue": self.truth_drive_sigma_z[i],
+            }
         return {
             **extra,
             "knobs": self.knobs[i],
-            "drive": d, "witness": w,
-            "drive_present": self.drive_present[i], "witness_viable": self.witness_viable[i],
-            "drive_density": self.drive_density[i], "witness_density": self.witness_density[i],
-            "drive_frac": self.drive_frac[i], "witness_frac": self.witness_frac[i],
+            "drive": d,
+            "witness": w,
+            "drive_present": self.drive_present[i],
+            "witness_viable": self.witness_viable[i],
+            "drive_density": self.drive_density[i],
+            "witness_density": self.witness_density[i],
+            "drive_frac": self.drive_frac[i],
+            "witness_frac": self.witness_frac[i],
         }
 
 
 class TwoBunchFlowDataModule(L.LightningDataModule):
-    def __init__(self, processed_h5="processed/twobunch_flow.h5", norm_json=None,
-                 batch_size=64, val_fraction=0.1, num_workers=0, split_seed=42, scaler=None,
-                 split="random", orig_split=None, truth_h5=None, resample_p=None):
+    def __init__(
+        self,
+        processed_h5="processed/twobunch_flow.h5",
+        norm_json=None,
+        batch_size=64,
+        val_fraction=0.1,
+        num_workers=0,
+        split_seed=42,
+        scaler=None,
+        split="random",
+        orig_split=None,
+        truth_h5=None,
+        resample_p=None,
+    ):
         super().__init__()
         self.save_hyperparameters()
         self.full = None
@@ -154,17 +180,21 @@ class TwoBunchFlowDataModule(L.LightningDataModule):
 
     def setup(self, stage=None):
         if self.full is None:
-            self.full = TwoBunchFlowDataset(self.hparams.processed_h5, self.hparams.norm_json,
-                                            scaler=self.hparams.scaler, truth_h5=self.hparams.truth_h5,
-                                            resample_p=self.hparams.resample_p)
+            self.full = TwoBunchFlowDataset(
+                self.hparams.processed_h5,
+                self.hparams.norm_json,
+                scaler=self.hparams.scaler,
+                truth_h5=self.hparams.truth_h5,
+                resample_p=self.hparams.resample_p,
+            )
         if self.full.holdout.any() and self.hparams.split != "group":
             raise ValueError("table has pre-registered holdout rows: use split='group' (excludes them)")
         if self.hparams.split == "random":
             n_val = int(round(len(self.full) * self.hparams.val_fraction))
             n_train = len(self.full) - n_val
             self.train, self.val = random_split(
-                self.full, [n_train, n_val],
-                generator=torch.Generator().manual_seed(self.hparams.split_seed))
+                self.full, [n_train, n_val], generator=torch.Generator().manual_seed(self.hparams.split_seed)
+            )
         elif self.hparams.split == "group":
             if not self.full.has_groups:
                 raise ValueError(f"{self.hparams.processed_h5} has no 'group' column (re-run preprocess)")
@@ -187,18 +217,24 @@ class TwoBunchFlowDataModule(L.LightningDataModule):
             free = (role == "") & ~self.full.holdout
             for c in np.unique(self.full.row_campaign[free]):
                 rows = np.flatnonzero(free & (self.full.row_campaign == c))
-                tr, va = group_split(self.full.groups[rows], self.hparams.val_fraction,
-                                     self.hparams.split_seed + int(c))
-                tr_idx += rows[tr].tolist(); va_idx += rows[va].tolist()
+                tr, va = group_split(
+                    self.full.groups[rows], self.hparams.val_fraction, self.hparams.split_seed + int(c)
+                )
+                tr_idx += rows[tr].tolist()
+                va_idx += rows[va].tolist()
             self.train, self.val = Subset(self.full, sorted(tr_idx)), Subset(self.full, sorted(va_idx))
             self.test = Subset(self.full, np.flatnonzero(self.full.holdout).tolist())
         else:
             raise ValueError(f"split must be 'random' or 'group', got {self.hparams.split!r}")
 
     def _dl(self, ds, shuffle):
-        return DataLoader(ds, batch_size=self.hparams.batch_size, shuffle=shuffle,
-                          num_workers=self.hparams.num_workers,
-                          persistent_workers=self.hparams.num_workers > 0)
+        return DataLoader(
+            ds,
+            batch_size=self.hparams.batch_size,
+            shuffle=shuffle,
+            num_workers=self.hparams.num_workers,
+            persistent_workers=self.hparams.num_workers > 0,
+        )
 
     def train_dataloader(self):
         return self._dl(self.train, True)
