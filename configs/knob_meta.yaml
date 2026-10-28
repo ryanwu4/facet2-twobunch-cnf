@@ -1,0 +1,53 @@
+# Units and descriptions of the TwoBunchFlow conditioning knobs, keyed by knob name.
+# Confirmed by Ryan 2026-10-28; derived from the code that applies each knob.
+#   confidence: code     -> unit read off the setter / its docstring / an inline comment
+#   confidence: inferred -> unit inferred (names, golden values, conventions); check against the code
+#                           that consumes the value before relying on it
+# Sources: FACET2-S2E src/FACET2_S2E/simulators/bmad/lattice/set_lattice.py (linac / FF / W-chicane
+# knobs), twobunch-s2e-rl src/twobunch_s2e_rl/sim/injector.py + datagen/sweep_params.py (injector knobs).
+
+# ---- linac RF (FACET2-S2E setLinacsHelper) -------------------------------------------------------
+L1PhaseSet: {unit: deg, confidence: code, description: L1 RF phase setting}
+L2PhaseSet: {unit: deg, confidence: code, description: L2 RF phase setting}
+L1EnergyOffset: {unit: eV, confidence: code, description: L1 energy-gain offset}
+L2EnergyOffset: {unit: eV, confidence: code, description: L2 energy-gain offset}
+L3EnergyOffset: {unit: eV, confidence: code, description: L3 energy-gain offset}
+L0BPhaseSet: {unit: deg, confidence: code, description: L0B RF phase setting}
+L0BEnergyOffset: {unit: eV, confidence: code, description: L0B energy-gain offset}
+
+# ---- W-chicane sextupoles: strength (setSextkG: integrated field / length -> B2_GRADIENT; the baseline
+# config sets symmetricSextupoleStrengths: True, so each *EL knob sets the EL/ER pair) and movers (independent)
+S1ELkG: {unit: kG/m, confidence: code, description: S1EL + S1ER sextupole integrated strength (set symmetrically)}
+S2ELkG: {unit: kG/m, confidence: code, description: S2EL + S2ER sextupole integrated strength (set symmetrically)}
+S3ELkG: {unit: kG/m, confidence: code, description: S3EL + S3ER sextupole integrated strength (set symmetrically)}
+S1EL_xOffset: {unit: m, confidence: code, description: S1EL mover horizontal offset (Bmad X_OFFSET)}
+S1EL_yOffset: {unit: m, confidence: code, description: S1EL mover vertical offset (Bmad Y_OFFSET)}
+S2EL_xOffset: {unit: m, confidence: code, description: S2EL mover horizontal offset (Bmad X_OFFSET)}
+S2EL_yOffset: {unit: m, confidence: code, description: S2EL mover vertical offset (Bmad Y_OFFSET)}
+S2ER_xOffset: {unit: m, confidence: code, description: S2ER mover horizontal offset (Bmad X_OFFSET)}
+S2ER_yOffset: {unit: m, confidence: code, description: S2ER mover vertical offset (Bmad Y_OFFSET)}
+S1ER_xOffset: {unit: m, confidence: code, description: S1ER mover horizontal offset (Bmad X_OFFSET)}
+S1ER_yOffset: {unit: m, confidence: code, description: S1ER mover vertical offset (Bmad Y_OFFSET)}
+
+# ---- final focus (setQuadkG: integrated gradient; setKickerkG: integrated field -> BL_KICK) ---------
+Q5FFkG: {unit: kG, confidence: code, description: Q5FF quadrupole integrated gradient (BDES convention)}
+Q4FFkG: {unit: kG, confidence: code, description: Q4FF quadrupole integrated gradient (BDES convention)}
+Q3FFkG: {unit: kG, confidence: code, description: Q3FF quadrupole integrated gradient (BDES convention)}
+XC1FFkG: {unit: kG*m, confidence: code, description: XC1FF horizontal corrector integrated field}
+XC3FFkG: {unit: kG*m, confidence: code, description: XC3FF horizontal corrector integrated field}
+YC1FFkG: {unit: kG*m, confidence: code, description: YC1FF vertical corrector integrated field}
+YC2FFkG: {unit: kG*m, confidence: code, description: YC2FF vertical corrector integrated field}
+
+# ---- injector / laser (Impact-T + distgen, twobunch-s2e-rl sim/injector.py) -------------------------
+laser_timing_ps: {unit: ps, confidence: code, description: common-mode laser-to-RF timing (added to both laser pulses' avg_t)}
+"GUNF:rf_field_scale": {unit: V/m, confidence: inferred, description: "Impact-T gun field-map scale (golden 119 MV/m / 2.44885 map normalization)"}
+"GUNF:theta0_deg": {unit: deg, confidence: code, description: Impact-T gun RF phase}
+"distgen:t_dist:dists:d2:avg_t:value": {unit: ps, confidence: code, description: drive laser pulse delay (witness pulse d1 at 0 ps)}
+drive_fraction: {unit: "1", confidence: code, description: "drive share of the injected charge (laser t_dist weights d2 = f, d1 = 1 - f)"}
+"distgen:total_charge:value": {unit: pC, confidence: code, description: total injected bunch charge}
+L0AF_phase_offset_deg: {unit: deg, confidence: code, description: L0AF phase offset from its pinned reference}
+"SOL10111:solenoid_field_scale": {unit: "1", confidence: inferred, description: "Impact-T solenoid field scale (golden -0.39 / 1.6; SOL_PV_TO_SIM = 1.6)"}
+"distgen:r_dist:sigma_xy:value": {unit: mm, confidence: code, description: laser spot rms size on the cathode}
+"distgen:r_dist:truncation_radius:value": {unit: mm, confidence: code, description: laser spot truncation radius}
+"distgen:start:MTE:value": {unit: meV, confidence: code, description: cathode mean transverse energy}
+sigma_t_ps: {unit: ps, confidence: code, description: rms duration of both laser pulses}

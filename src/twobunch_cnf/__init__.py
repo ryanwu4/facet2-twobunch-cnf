@@ -24,4 +24,22 @@ ELECTRON_MC2_EV = 0.51099895e6
 DEFAULT_P = 1024
 BUNCHES = ("drive", "witness")  # index k: 0=drive, 1=witness
 
-__all__ = ["COORD_KEYS", "LATENT_DIM", "ELECTRON_MC2_EV", "DEFAULT_P", "BUNCHES", "__version__"]
+__all__ = [
+    "COORD_KEYS",
+    "LATENT_DIM",
+    "ELECTRON_MC2_EV",
+    "DEFAULT_P",
+    "BUNCHES",
+    "__version__",
+    "load_model",
+    "available_models",
+]
+
+
+def __getattr__(name):
+    # lazy: `import twobunch_cnf` must not import torch / lightning
+    if name in ("load_model", "available_models"):
+        from . import bundle
+
+        return getattr(bundle, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

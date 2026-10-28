@@ -33,6 +33,10 @@ twobunch-cnf-migrate = "twobunch_cnf.migrate:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+# model bundles (model.ckpt + norm.json + run.json + bundle.yaml)
+twobunch_cnf = ["resources/*/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
