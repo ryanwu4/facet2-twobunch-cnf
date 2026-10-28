@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "facet2-twobunch-cnf"
+version = "0.1.0"
+description = "Conditional normalizing-flow surrogate of the FACET-II two-bunch beam (drive + witness 6D phase space and feasibility) conditioned on machine knobs"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "torch>=2.0",
+    "lightning>=2.0",
+    "h5py",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# eval.py / plot_training.py
+eval = ["matplotlib", "scikit-learn", "pandas"]
+# ParticleGroup in/out (beam_io)
+beam = ["openpmd-beamphysics"]
+test = ["pytest", "scikit-learn"]
+dev = ["pytest", "scikit-learn", "ruff", "pre-commit"]
+
+[project.scripts]
+twobunch-cnf-train = "twobunch_cnf.train:main"
+twobunch-cnf-eval = "twobunch_cnf.eval:main"
+twobunch-cnf-plot-training = "twobunch_cnf.plot_training:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# ---- pixi -------------------------------------------------------------------------------------
+# `pixi install` / `pixi run -e test test`. conda-forge only, python 3.12 like the SLAC nightly
+# environment; the CUDA platform entry makes the solver pick CUDA pytorch builds.
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = [{ platform = "linux-64", cuda = "12.0" }]
+
+[tool.pixi.dependencies]
+python = "3.12.*"
+pytorch = "*"
+lightning = "*"
+numpy = "*"
+h5py = "*"
+pyyaml = "*"
+
+[tool.pixi.pypi-dependencies]
+facet2-twobunch-cnf = { path = ".", editable = true }
+
+[tool.pixi.feature.test.dependencies]
+pytest = "*"
+scikit-learn = "*"
+matplotlib = "*"
+pandas = "*"
+openpmd-beamphysics = "*"
+ruff = "*"
+
+[tool.pixi.feature.test.tasks]
+test = "pytest"
+lint = "ruff check src tests"
+
+[tool.pixi.environments]
+test = ["test"]
