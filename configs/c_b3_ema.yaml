@@ -1,0 +1,50 @@
+# C_B3 (trained/xtcav23e_inj_covB2_C_B3_2026-10-21 in twobunch-s2e-rl): the current best two-bunch flow,
+# 37 knobs, treaty point XTCAVF. Generated from its run.json (twobunch-s2e-rl@fb11e2f); recipe only.
+# Pass the data / warm-start paths on the command line; for C_B3 they were (twobunch-s2e-rl root):
+#   --processed processed/xtcav23e_inj_cov_sw_P4096_2026-10-21.h5
+#   --truth-h5  processed/xtcav23e_inj_cov_sw_P4096_2026-10-21_truth.h5
+#   --role-map  processed/role_map_ftc_s0_2026-10-16.json
+#   --init-ckpt trained/xtcav23e_inj_covB2_B3_rs1024_sw_lat_2026-10-21/checkpoints/final.ckpt
+#   --out <run_dir>
+# C_B3 = warm start from the B3 run's final.ckpt (latent + SW), fine-tuned on the compression-sweep
+# table with EMA; the weights used downstream are its checkpoints/final_ema.ckpt.
+# Removed options (all off for C_B3): backbone, backbone_bins, backbone_dims, backbone_lr, backbone_pca, backbone_shear, bunches, centroid_buffer, centroid_head, centroid_head_lr, centroid_prefit_steps, coupling, curve_dims, curve_head, curve_head_lr, curve_order, curve_scale, orig_split, t_two_part, w_backbone_prior, w_centroid, w_curve.
+epochs: 20
+batch_size: 64
+lr: 2.0e-05
+n_layers: 16
+hidden_dim: 128
+n_bins: 16
+tail_bound: 8.0
+w_emit: 0.25
+w_emit_z: 0.5
+w_emit_4d: 0.125
+w_emit_6d: 0.025
+w_cov: 0.5
+w_mean: 1.0
+w_spacing: 1.0
+spacing_scale_m: 1.0e-05
+w_pair: 3.0
+pair_batch: 32
+pair_particles: 512
+pair_crossed_frac: 0.3
+beam_latent_dim: 8
+beam_latent_beta: 1.0
+beam_latent_free_bits: 0.0
+beam_latent_lr: 0.0003
+set_hidden: 128
+ema_decay: 0.999
+resample_p: 1024
+w_sw: 2.0
+sw_proj: 32
+w_logsz: 0.5
+logsz_compressed_boost: 2.0
+init_partial: false
+t_sharp: 4.0
+t_head_lr: 0.001
+save_top_k: 3
+patience: 0
+select_metric: val_paired_delta_rms_um
+seed: 0
+lr_schedule: cosine
+split: group
