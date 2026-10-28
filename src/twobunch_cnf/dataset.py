@@ -21,28 +21,6 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset, random_split
 
 
-def reproduce_random_split(n: int, val_fraction: float = 0.1, seed: int = 42):
-    """Row indices of the validation part of the DataModule's `random` split (torch random_split
-    with a seeded generator), e.g. to recover which rows an earlier flow was validated on."""
-    n_val = int(round(n * val_fraction))
-    perm = torch.randperm(n, generator=torch.Generator().manual_seed(seed)).tolist()
-    return sorted(perm[n - n_val:])
-
-
-def orig_split_keys(processed_h5: str, campaigns: list[str], val_fraction=0.1, seed=42):
-    """{"campaign/idx" -> 'train' | 'val'} for an earlier table built from `campaigns` (in order)
-    whose rows carry no campaign column: the idx resets mark the campaign boundaries."""
-    with h5py.File(processed_h5, "r") as h:
-        idx = np.asarray(h["idx"][...])
-        camp = np.asarray(h["campaign"][...]) if "campaign" in h else None
-    if camp is None:
-        camp = np.concatenate([[0], np.cumsum(np.diff(idx) < 0)])
-    if camp.max() + 1 != len(campaigns):
-        raise ValueError(f"{processed_h5}: {camp.max() + 1} campaign blocks, {len(campaigns)} names given")
-    val = set(reproduce_random_split(len(idx), val_fraction, seed))
-    return {f"{campaigns[c]}/{int(i)}": ("val" if r in val else "train") for r, (c, i) in enumerate(zip(camp, idx))}
-
-
 def group_split(groups, val_fraction: float, seed: int):
     """(train_idx, val_idx) with whole groups on one side; val gets ~val_fraction of the rows."""
     groups = np.asarray(groups)

@@ -259,7 +259,7 @@ def test_rqs_monotonic_and_continuous_at_boundary():
 
 def test_rqs_model_nll_grad_and_sampling():
     torch.manual_seed(0)
-    m = TwoBunchFlow(condition_dim=8, n_layers=4, hidden_dim=32, coupling="rqs",
+    m = TwoBunchFlow(condition_dim=8, n_layers=4, hidden_dim=32,
                      n_bins=8, n_aux_particles=128).eval()
     # invertibility of the stacked flow (base<->w)
     w = torch.randn(16, 6)
@@ -277,7 +277,7 @@ def test_rqs_model_nll_grad_and_sampling():
 
 
 def test_step_cov_term_and_rqs():
-    m = TwoBunchFlow(condition_dim=8, n_layers=4, hidden_dim=32, coupling="rqs",
+    m = TwoBunchFlow(condition_dim=8, n_layers=4, hidden_dim=32,
                      n_bins=8, w_cov=0.5, n_aux_particles=128)
     m.log_dict = lambda *a, **k: None
     loss = m._step(_batch(), "train")
@@ -319,7 +319,7 @@ def test_pair_loss_and_two_part_T_head():
     logs = {}
     m = TwoBunchFlow(condition_dim=8, n_layers=4, hidden_dim=32, n_aux_particles=128,
                      drive_std=[1.0, 1.0, 50e-6, 1.0, 1.0, 1.0], witness_std=[1.0, 1.0, 50e-6, 1.0, 1.0, 1.0],
-                     w_pair=1.0, pair_batch=8, pair_particles=64, t_two_part=True, t_head_lr=1e-3)
+                     w_pair=1.0, pair_batch=8, pair_particles=64, t_head_lr=1e-3)
     m.log_dict = lambda d, **k: logs.update(d)
     calls = []
     def src(b, device):
@@ -349,7 +349,7 @@ def _tiny_model():
     from twobunch_cnf.model import TwoBunchFlow
 
     torch.manual_seed(0)
-    return TwoBunchFlow(condition_dim=5, n_layers=2, hidden_dim=16, coupling="affine",
+    return TwoBunchFlow(condition_dim=5, n_layers=2, hidden_dim=16,
                         drive_mean=[0.0] * 6, drive_std=[1.0] * 6,
                         witness_mean=[0.0] * 6, witness_std=[1.0] * 6,
                         knob_low=[0.0] * 5, knob_high=[1.0] * 5)
@@ -380,8 +380,9 @@ def test_crn_shared_z_across_batch():
         out3 = m.sample_bunch(torch.full((3, 5), 0.5), 0, 32, z=z)
         out1 = m.sample_bunch(torch.full((1, 5), 0.5), 0, 32, z=z)
     assert out3.shape == (3, 32, 6)
-    # identical conditioning + shared z => identical clouds across the batch
-    assert torch.allclose(out3[0], out3[1]) and torch.allclose(out3[0], out1[0])
+    # identical conditioning + shared z => identical clouds across the batch (up to float32 kernels that
+    # differ with the batch size: ~3e-6 on O(1) values for the RQS flow)
+    assert torch.allclose(out3[0], out3[1]) and torch.allclose(out3[0], out1[0], atol=1e-5)
     # repeated call with the same z is deterministic
     with torch.no_grad():
         again = m.sample_bunch(torch.full((3, 5), 0.5), 0, 32, z=z)

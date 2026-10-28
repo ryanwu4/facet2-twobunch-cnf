@@ -14,7 +14,7 @@ NEW = KnobSpace.from_lists(["a", "new1", "b", "c", "new2"],
 
 def _flow():
     torch.manual_seed(0)
-    return TwoBunchFlow(condition_dim=3, n_layers=2, hidden_dim=16, coupling="rqs",
+    return TwoBunchFlow(condition_dim=3, n_layers=2, hidden_dim=16,
                         knob_low=list(OLD.low), knob_high=list(OLD.high), knob_keys=list(OLD.keys)).eval()
 
 
@@ -37,6 +37,30 @@ def test_widened_reproduces_old_at_any_new_knob_value(new_vals):
     a = _obs(old_flow, OLD.normalize(phys).float(), z)
     b = _obs(wide, NEW.normalize(phys_new).float(), z)
     for k in ("bunch_spacing", "drive_norm_emit_x", "witness_sigma_z", "T_drive", "p_surv"):
+        torch.testing.assert_close(b[k], a[k], rtol=2e-4, atol=1e-9)
+
+
+def test_widened_beam_latent_model_reproduces_old():
+    """Every knob-input layer is remapped: encoder, feasibility + two-part T heads, latent prior."""
+    torch.manual_seed(0)
+    old_flow = TwoBunchFlow(condition_dim=3, n_layers=2, hidden_dim=16, beam_latent_dim=4,
+                            knob_low=list(OLD.low), knob_high=list(OLD.high), knob_keys=list(OLD.keys)).eval()
+    with torch.no_grad():                         # a non-trivial (non-zero-init) latent prior and input map
+        for k in range(2):
+            old_flow.latent_prior[k][-1].weight.normal_(0, 0.3)
+            old_flow.latent_in[k].weight.normal_(0, 0.3)
+    wide = widen_conditioning(old_flow, NEW)
+    g = torch.Generator().manual_seed(2)
+    phys = OLD.denormalize(torch.rand(4, 3, generator=g, dtype=torch.float64))
+    phys_new = torch.stack([phys[:, 0], torch.full((4,), 5.5, dtype=torch.float64), phys[:, 1],
+                            phys[:, 2], torch.full((4,), 0.3, dtype=torch.float64)], -1)
+    z = (torch.randn(64, 6, generator=g), torch.randn(64, 6, generator=g))
+    with torch.no_grad():
+        a = old_flow.observables(OLD.normalize(phys).float(), n=64, z_drive=z[0], z_witness=z[1],
+                                 generator=torch.Generator().manual_seed(9))
+        b = wide.observables(NEW.normalize(phys_new).float(), n=64, z_drive=z[0], z_witness=z[1],
+                             generator=torch.Generator().manual_seed(9))
+    for k in ("bunch_spacing", "drive_norm_emit_x", "witness_sigma_z", "T_drive", "T_witness", "p_surv"):
         torch.testing.assert_close(b[k], a[k], rtol=2e-4, atol=1e-9)
 
 
@@ -87,7 +111,7 @@ def test_zero_epoch_finetune_reproduces_old_flow(tmp_path):
     dm = TwoBunchFlowDataModule(processed_h5=h5, scaler=scaler)
     dm.setup()
     check_knob_frame(state, dm.norm, "ckpt")
-    model = build_model(dm.norm, n_layers=2, hidden_dim=16, coupling="rqs").eval()
+    model = build_model(dm.norm, n_layers=2, hidden_dim=16).eval()
     model.load_state_dict(state, strict=False)
     torch.testing.assert_close(model.drive_mean, wide.drive_mean)
     # the training targets are standardized in the model's own frame
@@ -116,9 +140,9 @@ def test_group_split_keeps_groups_together():
     assert sorted(tr + va) == list(range(100))
 
 
-def test_orig_split_keeps_roles_and_stratifies(tmp_path):
-    """Rows the warm-start flow validated on stay in val, its train rows stay in train, holdout rows
-    in neither; the rest is a group split per campaign."""
+def test_roles_kept_and_rest_group_split(tmp_path):
+    """Rows given a role (--role-map: the split an earlier flow used) keep it, holdout rows are in
+    neither split; the rest is a group split per campaign."""
     import h5py
     import numpy as np
     from twobunch_cnf.dataset import TwoBunchFlowDataModule

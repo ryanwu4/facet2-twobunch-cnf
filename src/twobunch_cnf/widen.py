@@ -1,7 +1,8 @@
 """Widen a trained flow's conditioning to a bigger knob space without changing what it predicts.
 
-Only two layers see the knob vector: `encoder[0]` (input = [knobs, one-hot bunch(2)]) and
-`feas_head[0]` (input = knobs). Knobs enter normalized in the model's frame, u = (x - lo) / span.
+The layers that see the knob vector are `encoder[0]` (input = [knobs, one-hot bunch(2)]),
+`feas_head[0]` and `t_full_head[0]` (input = knobs), and, for beam-latent models, the latent prior's
+`latent_prior[k][0]` (input = knobs). Knobs enter normalized in the model's frame, u = (x - lo) / span.
 For a new frame (lo', span') the old input is u = o + s * u' with s = span' / span and
 o = (lo' - lo) / span, so
 
@@ -51,7 +52,10 @@ def widen_conditioning(flow: TwoBunchFlow, new_space: KnobSpace) -> TwoBunchFlow
               knob_keys=list(new_space.keys))
     wide = TwoBunchFlow(**hp)
     state = copy.deepcopy(flow.state_dict())
-    for prefix, n_extra in (("encoder.0", 2), ("feas_head.0", 0)):
+    knob_layers = [("encoder.0", 2), ("feas_head.0", 0), ("t_full_head.0", 0)]
+    if flow.hparams.get("beam_latent_dim", 0):
+        knob_layers += [(f"latent_prior.{k}.0", 0) for k in range(2)]
+    for prefix, n_extra in knob_layers:
         lin = dict(flow.named_modules())[prefix]
         W, b = _remap_first_layer(lin, old, new_space, n_extra)
         state[f"{prefix}.weight"], state[f"{prefix}.bias"] = W, b

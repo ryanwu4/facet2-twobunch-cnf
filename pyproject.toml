@@ -28,6 +28,7 @@ dev = ["pytest", "scikit-learn", "ruff", "pre-commit"]
 twobunch-cnf-train = "twobunch_cnf.train:main"
 twobunch-cnf-eval = "twobunch_cnf.eval:main"
 twobunch-cnf-plot-training = "twobunch_cnf.plot_training:main"
+twobunch-cnf-migrate = "twobunch_cnf.migrate:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

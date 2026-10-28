@@ -18,7 +18,7 @@ import torch
 from sklearn.metrics import roc_auc_score
 
 from .dataset import TwoBunchFlowDataModule
-from .model import TwoBunchFlow
+from .model import load_flow
 from .properties import inter_bunch, per_bunch
 from .artifacts import resolve_ckpt
 
@@ -47,7 +47,7 @@ def _destd(parts_std, mean, std):
 @torch.no_grad()
 def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
     device = device if torch.cuda.is_available() else "cpu"
-    model = TwoBunchFlow.load_from_checkpoint(ckpt, map_location=device).eval().to(device)
+    model = load_flow(ckpt, map_location=device).to(device)
     dm = TwoBunchFlowDataModule(processed_h5=processed, batch_size=256, num_workers=0)
     dm.setup()
     val = dm.val
