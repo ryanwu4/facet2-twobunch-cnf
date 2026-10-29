@@ -48,8 +48,13 @@ def _destd(parts_std, mean, std):
 
 @torch.no_grad()
 def evaluate(ckpt, processed, out_dir, n=2048, device="cuda"):
+    """ckpt: a checkpoint path, or an already-loaded TwoBunchFlow-like model (e.g. one a caller loaded with its
+    own loader)."""
     device = device if torch.cuda.is_available() else "cpu"
-    model = load_flow(ckpt, map_location=device).to(device)
+    if isinstance(ckpt, torch.nn.Module):
+        model = ckpt.eval().to(device)
+    else:
+        model = load_flow(ckpt, map_location=device).to(device)
     dm = TwoBunchFlowDataModule(processed_h5=processed, batch_size=256, num_workers=0)
     dm.setup()
     val = dm.val
