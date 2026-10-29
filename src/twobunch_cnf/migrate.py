@@ -81,7 +81,8 @@ def migrate_checkpoint(ckpt: dict, source: str = "") -> dict:
     if unknown:
         raise ValueError(f"{source}: unknown hparam(s) {unknown} (from an experiment branch?); not converted")
     new_hp = {k: v for k, v in hp.items() if k in known}
-    TwoBunchFlow(**new_hp).load_state_dict(ckpt["state_dict"], strict=True)
+    with torch.random.fork_rng(devices=[]):  # the strict check's random init must not move the caller's RNG
+        TwoBunchFlow(**new_hp).load_state_dict(ckpt["state_dict"], strict=True)
     out = dict(ckpt)
     out["hyper_parameters"] = new_hp
     out["twobunch_cnf_migration"] = {

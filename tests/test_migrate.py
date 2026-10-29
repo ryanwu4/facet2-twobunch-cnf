@@ -101,3 +101,12 @@ def test_never_in_place_and_no_silent_overwrite(tmp_path):
     with pytest.raises(FileExistsError):
         migrate_file(src, dst)
     migrate_file(src, dst, overwrite=True)
+
+
+def test_migrate_does_not_move_the_global_rng():
+    """Callers that seed once and then load (e.g. RL env builders) must see the same RNG stream as before."""
+    ck = _legacy_ckpt(_flow())
+    torch.manual_seed(123)
+    before = torch.get_rng_state()
+    migrate_checkpoint(ck)
+    assert torch.equal(torch.get_rng_state(), before)
