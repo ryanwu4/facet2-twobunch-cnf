@@ -450,8 +450,8 @@ def test_crn_shared_z_across_batch():
         out1 = m.sample_bunch(torch.full((1, 5), 0.5), 0, 32, z=z)
     assert out3.shape == (3, 32, 6)
     # identical conditioning + shared z => identical clouds across the batch (up to float32 kernels that
-    # differ with the batch size: ~3e-6 on O(1) values for the RQS flow)
-    assert torch.allclose(out3[0], out3[1]) and torch.allclose(out3[0], out1[0], atol=1e-5)
+    # differ with the batch size and row: ~3e-6 on O(1) values for the RQS flow)
+    assert torch.allclose(out3[0], out3[1], atol=1e-5) and torch.allclose(out3[0], out1[0], atol=1e-5)
     # repeated call with the same z is deterministic
     with torch.no_grad():
         again = m.sample_bunch(torch.full((3, 5), 0.5), 0, 32, z=z)

@@ -36,8 +36,9 @@ def test_bundled_flow_matches_the_source_model(model):
     want = np.load(GOLDEN)
     got = probe(model.flow)
     assert set(got) == set(want.files)
+    # rtol: float32 kernels differ between torch builds (1.4e-5 seen between conda-forge 2.14 and PyPI CPU 2.15)
     for k in want.files:
-        np.testing.assert_allclose(got[k], want[k], rtol=1e-5, atol=1e-9, err_msg=k)
+        np.testing.assert_allclose(got[k], want[k], rtol=1e-4, atol=1e-9, err_msg=k)
 
 
 def test_tampered_checkpoint_is_refused(tmp_path):
