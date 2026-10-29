@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "facet2-twobunch-cnf"
 version = "0.1.0"
 description = "Conditional normalizing-flow surrogate of the FACET-II two-bunch beam (drive + witness 6D phase space and feasibility) conditioned on machine knobs"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
@@ -15,6 +17,9 @@ dependencies = [
     "h5py",
     "pyyaml",
 ]
+
+[project.urls]
+Repository = "https://github.com/ryanwu4/facet2-twobunch-cnf"
 
 [project.optional-dependencies]
 # eval.py / plot_training.py
@@ -80,5 +85,18 @@ test = "pytest"
 lint = "ruff check src tests"
 fmt = "ruff format src tests"
 
+# virtual-accelerator's tests against this package, run from a VA checkout (not installed, so a missing
+# checkout cannot break `pixi install`): `pixi run -e va test-va [VA_DIR]`
+[tool.pixi.feature.va.dependencies]
+lume-base = "*"
+openpmd-beamphysics = "*"
+pandas = "*"
+scipy = "*"
+pytest = "*"
+
+[tool.pixi.feature.va.tasks]
+test-va = { cmd = "cd {{ va_dir }} && PYTHONPATH=. pytest", args = [{ arg = "va_dir", default = "../virtual-accelerator" }] }
+
 [tool.pixi.environments]
 test = ["test"]
+va = ["va"]

@@ -6,7 +6,7 @@ package_version: 0.1.0
 treaty_point: XTCAVF
 checkpoint:
   file: model.ckpt
-  sha256: 3c74914516afd68e812659bec48f1c730d6c466fe0994215633538e6482808db
+  sha256: 836ec15fcf264c0dbb84b184fd65689e31e546ae30127e4d8a935851945607af
   slim: true
   source: trained/xtcav23e_inj_covB2_C_B3_2026-10-21/checkpoints/final_ema.ckpt
   source_sha256: 36f85b2b47c5bf9d16b423aa2f000377e363f928deac598fb554e3b80e790387

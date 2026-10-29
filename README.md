@@ -13,9 +13,16 @@ the RL controllers.
 ## Install
 
 ```bash
+pip install "facet2-twobunch-cnf[beam] @ git+https://github.com/ryanwu4/facet2-twobunch-cnf@v0.1.0"
+```
+
+For development:
+
+```bash
 pixi install                  # default env (python 3.12, CUDA pytorch, lightning)
 pixi run -e test test         # unit tests
 pixi run -e test lint         # ruff check; `pixi run -e test fmt` = ruff format
+pixi run -e va test-va        # virtual-accelerator's tests, from a checkout at ../virtual-accelerator
 # or plain pip: pip install -e ".[eval,beam,test]"
 ```
 
@@ -102,4 +109,4 @@ All paths are explicit; nothing defaults to a repo-relative location.
 
 ## License
 
-To be decided before the package is depended on by virtual-accelerator.
+Apache-2.0 (see `LICENSE`).

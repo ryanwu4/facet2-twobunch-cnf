@@ -93,9 +93,11 @@ def main():
         raise SystemExit(f"{out} is not empty (pass --overwrite)")
     out.mkdir(parents=True, exist_ok=True)
 
-    # checkpoint: migrate + slim
+    # checkpoint: migrate + slim. The source is recorded relative to its repo (bundles are published).
+    src_repo = _git("rev-parse", "--show-toplevel", cwd=src.parent)
+    src_rel = str(src.relative_to(src_repo)) if src_repo else src.name
     ck = torch.load(src, map_location="cpu", weights_only=True)
-    mig = migrate_checkpoint(ck, source=str(src))
+    mig = migrate_checkpoint(ck, source=src_rel)
     torch.save({k: mig[k] for k in SLIM_KEYS if k in mig}, out / "model.ckpt")
     flow = load_flow(out / "model.ckpt")
     hp = flow.hparams
@@ -144,7 +146,6 @@ def main():
                 "lcavity, not a crab_cavity.",
     }
 
-    src_repo = _git("rev-parse", "--show-toplevel", cwd=src.parent)
     bundle = {
         "name": args.name,
         "description": args.description,
@@ -152,7 +153,7 @@ def main():
         "package_version": __version__,
         "treaty_point": hp.treaty_point,
         "checkpoint": {"file": "model.ckpt", "sha256": sha256(out / "model.ckpt"), "slim": True,
-                       "source": str(src.relative_to(src_repo)) if src_repo else str(src), "source_sha256": sha256(src)},
+                       "source": src_rel, "source_sha256": sha256(src)},
         "norm": "norm.json",
         "training_run": "run.json",
         "provenance": {"source_repo": Path(src_repo).name if src_repo else None,
