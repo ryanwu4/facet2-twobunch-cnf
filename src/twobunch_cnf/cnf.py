@@ -1,19 +1,20 @@
-"""TwoBunchCNF: a loaded flow plus what turns machine knobs into a beam at the handoff plane.
+"""TwoBunchCNF: a trained flow plus what turns knob settings into a beam at the output element.
 
-`draw()` samples one shot per knob setting (batched); `to_particle_group()` exports a shot as an
-openPMD-beamphysics ParticleGroup in the FACET2-S2E two-bunch convention:
+`draw()` samples one beam ("shot") per knob setting, batched; `to_particle_group()` exports a shot as an
+openPMD-beamphysics ParticleGroup, following the conventions of the beams FACET2-S2E saves:
 
-* fixed-z frame: every particle at z = s of the plane, the longitudinal coordinate in t. The flow
-  learned z = -c (t - <t>_w) (the overwritten z of FACET2_S2E getBeamAtElement, relative to the
-  charge-weighted mean arrival of both bunches); absolute arrival is not modeled, so
-  t = t_ref - z / c with t_ref the lattice reference time at the treaty plane.
-* `plane`: the treaty plane the flow was trained at (XTCAVF exit, TCAV off) or another plane of the
-  handoff element reached by an exact field-free drift (XTCAVF entrance = back-drift by its length,
-  valid because the TCAV was off).
-* one ParticleGroup for both bunches. `n_particles` is the INJECTED macroparticle count, split
-  drive / witness by the injected charges; lost particles are removed (surviving count = round(injected
-  x T)); one base weight Q / N x 1.001 (drive) / 0.999 (witness) [C], so `beam_io.split_bunches` and
-  FACET2_S2E getDriverAndWitness separate the bunches as in the campaign files.
+* One s for all particles: every particle has z = the s position of the plane, and the longitudinal
+  coordinate is t. The flow learned the z that FACET2-S2E's getBeamAtElement writes, z = -c (t - <t>),
+  relative to the charge-weighted mean arrival of both bunches. Absolute arrival is not modeled, so the
+  export uses t = t_ref - z / c, with t_ref the lattice reference time at the plane the flow was trained at.
+* `plane`: the trained plane (the XTCAVF exit, with the cavity off) or another plane of the same element,
+  reached by an exact field-free drift. The XTCAVF entrance is a drift back through the cavity, which is
+  exact because the cavity was off.
+* Both bunches in one ParticleGroup. `n_particles` is the number of macroparticles INJECTED, split between
+  drive and witness by their injected charges. Lost particles are removed, so round(n_injected * T)
+  survive. With Q the total injected charge and N = n_particles, each macroparticle weighs Q / N * 1.001
+  (drive) or Q / N * 0.999 (witness) [C], which is how `beam_io.split_bunches` and FACET2-S2E's
+  getDriverAndWitness tell the bunches apart.
 """
 
 from __future__ import annotations
@@ -37,9 +38,10 @@ _VALIDATION = ("none", "warn", "error")
 
 @dataclass
 class BeamDraw:
-    """One shot per knob setting (batch B). Clouds are physical (x, y, z, px, py, pz) [m, eV/c] with z
-    the flow's relative longitudinal coordinate; rows are padded to the batch's largest count and the
-    first n_drive / n_witness rows of each are the shot (see `clouds`)."""
+    """One shot per knob setting (batch B). `drive` and `witness` hold each shot's particles ("clouds"),
+    (x, y, z, px, py, pz) in m and eV/c, with z the flow's longitudinal coordinate relative to the beam's
+    mean. They are (B, max count, 6): shot i is only the first n_drive[i] / n_witness[i] particles, and
+    the rest are extra samples, not zeros, so use `clouds(i)`."""
 
     knobs_norm: torch.Tensor  # (B, n_knob) in the model's [0, 1] frame
     drive: torch.Tensor  # (B, max n_drive, 6)
@@ -48,9 +50,9 @@ class BeamDraw:
     n_witness: torch.Tensor  # (B,)
     weight_drive: torch.Tensor  # (B,) [C] per macroparticle
     weight_witness: torch.Tensor  # (B,) [C]
-    T_drive: torch.Tensor  # (B,) transmission used
+    T_drive: torch.Tensor  # (B,) transmitted fraction used for the counts
     T_witness: torch.Tensor  # (B,) 0 where the witness is lost
-    p_surv: torch.Tensor  # (B,) witness viability head
+    p_surv: torch.Tensor  # (B,) predicted probability that the witness survives
     witness_present: torch.Tensor  # (B,) bool
     n_particles: int  # injected macroparticles per shot
     seed: int | None
@@ -72,8 +74,9 @@ class BeamDraw:
 
 
 class TwoBunchCNF:
-    """A TwoBunchFlow with its knob frame (names, bounds, baseline), injected-charge model and handoff
-    reference values. Build it with `twobunch_cnf.load_model(name)`.
+    """A TwoBunchFlow with its knobs (names, training ranges, baselines), the injected charge of each
+    bunch, and the position and reference time of its output planes. Build it with
+    `twobunch_cnf.load_model(name)`.
 
     handoff: {"element", "trained_plane", "species", "planes": {plane: {"s_m", "ref_time_s"}}, ...}
     """
@@ -110,12 +113,12 @@ class TwoBunchCNF:
         return self
 
     def knobs_norm(self, values=None, validation: str = "none") -> torch.Tensor:
-        """Physical knobs -> the model's [0, 1] frame, (B, n_knob).
+        """Knob values -> the flow's input, each knob scaled to [0, 1] over its training range: (B, n_knob).
 
         values: None (the baseline); {name: value or 1-D array} (knobs not given take the baseline;
-        unknown names are an error); or a (n_knob,) / (B, n_knob) array of physical values in frame
-        order. validation (values outside the training box): 'none' (default, as the virtual-accelerator
-        injector surrogate: the flow extrapolates), 'warn', or 'error'."""
+        unknown names are an error); or a (n_knob,) / (B, n_knob) array of physical values in the order of
+        `knob_names`. validation, for values outside the training ranges: 'none' (default; the flow
+        extrapolates), 'warn', or 'error'."""
         ks = self.frame
         if validation not in _VALIDATION:
             raise ValueError(f"validation must be one of {_VALIDATION}, got {validation!r}")
@@ -163,14 +166,17 @@ class TwoBunchCNF:
     ) -> BeamDraw:
         """One shot per knob setting.
 
-        n_particles: injected macroparticles per shot (lost ones are removed, as in S2E).
-        seed: one torch.Generator drives everything random in the draw (same seed + same inputs -> same
-            draw); None = fresh.
-        witness: 'threshold' (default; present iff p_surv > 0.5), 'sample' (Bernoulli(p_surv)), 'always'.
-        transmission: 'given' (default; the two-part head's T, as the RL plants use) or 'mixture' (per
-            shot T = 1 with probability P(T = 1), else the lossy-tail value).
-        latent: 'sample' (default; the beam latent from the knob-conditioned prior) or 'mean' (prior
-            mean: a typical beam). No effect for flows without a beam latent.
+        n_particles: macroparticles injected per shot; lost ones are removed, as in FACET2-S2E.
+        seed: one torch.Generator drives everything random in the draw, so the same seed and inputs give
+            the same draw; None = a fresh draw.
+        witness: whether the witness is kept, given p_surv, the predicted probability that it survives:
+            'threshold' (default; kept iff p_surv > 0.5), 'sample' (kept with probability p_surv) or
+            'always'.
+        transmission: 'given' (default; a point estimate of the transmitted fraction T, close to 1
+            whenever no loss is likely) or 'mixture' (per shot, T = 1 with the predicted probability of no
+            loss, else the predicted T when there is loss; use it for loss statistics).
+        latent: 'sample' (default; a beam latent drawn from its knob-conditioned prior) or 'mean' (the
+            prior mean: a typical beam). No effect for flows without a beam latent.
         validation: see `knobs_norm`."""
         if witness not in ("threshold", "sample", "always"):
             raise ValueError(f"witness must be 'threshold', 'sample' or 'always', got {witness!r}")

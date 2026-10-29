@@ -1,11 +1,12 @@
-"""KnobSpace: the single knob-frame object (names, physical bounds, baseline) for the pipeline.
+"""KnobSpace: a model's knob frame, i.e. its knob names in order, their training ranges and baselines.
 
-Every place that maps knobs between physical units and the surrogate's normalized [0, 1] frame goes
-through `normalize` / `denormalize` here. A KnobSpace is always built from what an artifact STORED
-(a checkpoint's knob_low/high buffers, a processed norm json, a manifest) — never from today's knob
-tables, which may have changed since the artifact was made (L2PhaseSet was widened in place from
-[-38, -34] to [-40, -34] after the 8-knob campaigns; see twobunch-s2e-rl docs/architecture_plan.md).
-Named knob tables (for new campaigns) live in twobunch-s2e-rl (datagen/sweep_params.py).
+The flow's inputs are the knobs scaled to [0, 1] over their training ranges, and every conversion
+between physical values and that scale goes through `normalize` / `denormalize` here. A KnobSpace is
+always built from what an artifact STORED (a checkpoint's knob_low/high buffers, a norm json, a
+manifest), never from today's knob tables, which may have changed since the artifact was made:
+L2PhaseSet, for one, was widened in place from [-38, -34] to [-40, -34] after the early 8-knob
+campaigns (see twobunch-s2e-rl docs/architecture_plan.md). The knob tables for new campaigns live in
+twobunch-s2e-rl (datagen/sweep_params.py).
 """
 
 from __future__ import annotations

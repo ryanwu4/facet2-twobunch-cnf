@@ -9,8 +9,8 @@ o = (lo' - lo) / span, so
     W u + b = (W * s) u' + (b + W o)
 
 reproduces the old layer EXACTLY. Knobs that are new get zero columns, so the widened model ignores
-them until it is fine-tuned on data that varies them. Columns are matched by NAME; a knob dropped
-from the new space is an error (use the campaign knob-drop rule upstream instead).
+them until it is fine-tuned on data that varies them. Columns are matched by NAME; a knob missing
+from the new space is an error.
 """
 
 from __future__ import annotations

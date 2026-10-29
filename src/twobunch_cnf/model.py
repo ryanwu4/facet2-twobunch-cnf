@@ -1,19 +1,20 @@
-"""Two-bunch conditional normalizing-flow surrogate (Lightning).
+"""TwoBunchFlow: the two-bunch conditional normalizing flow, as a Lightning module.
 
-One shared rational-quadratic-spline coupling flow selected by a per-bunch index k (0=drive,
-1=witness). A whitening MLP maps (knobs,k) -> per-bunch (mu_k, L_k); the flow models the
-standardized residual w = L_k^{-1}(x_std - mu_k), un-whitened x_std = mu_k + L_k w. Feasibility
-heads (off the knobs) give witness viability p_surv and per-bunch surviving fractions T_d, T_w
-(two-part: P(T = 1) and the lossy tail). An optional beam-level latent (one draw per beam) lets the
-part of the beam the knobs cannot pin down vary between sampled beams.
+One rational-quadratic-spline coupling flow models both bunches, told apart by a bunch index k (0 = drive,
+1 = witness). A whitening network maps (knobs, k) to each bunch's mean mu_k and covariance factor L_k, so
+the flow only models the standardized residual w = L_k^-1 (x_std - mu_k), and x_std = mu_k + L_k w.
+Separate heads on the knobs predict p_surv, the probability that the witness survives, and each bunch's
+transmitted fraction T, in two parts: the probability that T = 1, and T when there is loss. An optional
+beam latent, drawn once per beam, carries the variation between simulated beams that the knobs don't
+explain.
 
-Reparameterized sampling => observables differentiable w.r.t. knobs (MBRL). Coupling math
-reused from the photoinjector flow. See lab-notebook 2026-06-09_nf-two-bunch-surrogate.md.
+Sampling is reparameterized, so observables of the samples are differentiable with respect to the knobs.
+The coupling layers come from slac-photoinjector-rl's single-bunch flow.
 
-This is the feature set of the released C_B3 model. Experimental options that were pruned
-(affine coupling, single-sigmoid T head, centroid / chirp-curve / backbone heads, single-bunch
-training) live on archive/unpruned-7ac3617 and experiment branches off it; checkpoints carrying
-their hparams are converted (when the option is off) by `twobunch_cnf.migrate`.
+Only the features of the shipped model (training run C_B3) are kept. The experimental options removed from
+it (affine coupling, a single-sigmoid T head, centroid / chirp-curve / backbone heads, single-bunch
+training) are on the archive/unpruned-7ac3617 branch. `twobunch_cnf.migrate` converts checkpoints that
+record those options, as long as they are off.
 """
 
 from __future__ import annotations
@@ -187,8 +188,7 @@ class TwoBunchFlow(L.LightningModule):
         # encoder over the row's particles gives q(s | cloud, knobs); loss = NLL + beta * KL(q || p(s | knobs)) /
         # (P * nll_dim_norm) (an ELBO per particle). Sampling: s ~ p(s | knobs), one draw per beam, so each
         # sampled beam can be sharp while the backbone the knobs cannot pin down varies between draws (the
-        # knob -> backbone map is not learnable to the beam's thinness: twobunch-s2e-rl
-        # results/2_surrogate_screen/curve_learnability_2026-10-20).
+        # knobs do not determine the beam's backbone, its curve in (z, pz), as sharply as the beam is thin).
         beam_latent_dim=0,
         beam_latent_beta=1.0,
         beam_latent_free_bits=0.0,
@@ -371,12 +371,16 @@ class TwoBunchFlow(L.LightningModule):
     def sample_bunch(self, knobs, k, n, physical=True, generator=None, z=None, s=None):
         """(B,n,6) cloud for bunch k. Differentiable w.r.t. knobs.
 
+        knobs: (B, n_knob), each knob scaled to [0, 1] over its training range (see
+           `TwoBunchCNF.knobs_norm`). k: 0 = drive, 1 = witness. physical: False returns
+           the standardized coordinates instead of m and eV/c.
         generator: optional torch.Generator for reproducible draws.
-        z: optional frozen base sample of shape (n, latent_dim), SHARED across the
-           batch (common random numbers — the GPSR frozen-buffer pattern): repeated
-           calls at different knobs give directly comparable clouds and a loss that
-           is deterministic in the conditioning. Default (None) keeps the fresh
-           per-call draw (unbiased reparameterized gradients for RL).
+        z: optional frozen sample of the flow's Gaussian base distribution (not the
+           longitudinal z, nor the beam latent s), of shape (n, latent_dim), SHARED across the
+           batch (common random numbers): repeated calls at different knobs give
+           directly comparable clouds and a loss that is deterministic in the knobs.
+           Default (None) keeps the fresh per-call draw (unbiased reparameterized
+           gradients for RL).
         s: optional beam latent (B, beam_latent_dim) (beam-latent models); default: one draw per
            beam from the knob-conditioned prior p(s | knobs).
         """
@@ -415,11 +419,13 @@ class TwoBunchFlow(L.LightningModule):
         t_w = s[:, 2] + (1 - s[:, 2]) * full[:, 1]
         return s[:, 0], t_d, t_w  # p_surv(witness), T_drive, T_witness
 
-    # ---- MBRL-facing observables ------------------------------------------
+    # ---- observables, for optimization and model-based RL -----------------
     def observables(self, knobs_norm, n=None, generator=None, z_drive=None, z_witness=None):
-        """Differentiable dict of per-bunch + inter-bunch + feasibility observables.
-        knobs_norm: (B,n_knob) in [0,1]. z_drive/z_witness: optional frozen (n,latent_dim)
-        base samples, one per bunch (see sample_bunch; CRN for deterministic fits)."""
+        """Differentiable dict of per-bunch, drive-witness and survival observables, each (B,).
+        knobs_norm: (B, n_knob), each knob scaled to [0, 1] over its training range.
+        n: particles sampled per bunch (default: the n_aux_particles hparam).
+        z_drive/z_witness: optional frozen (n, latent_dim) base samples, one per bunch (see
+        sample_bunch: common random numbers, for deterministic fits)."""
         n = n or self.hparams.n_aux_particles
         drive = self.sample_bunch(knobs_norm, 0, n, generator=generator, z=z_drive)
         witness = self.sample_bunch(knobs_norm, 1, n, generator=generator, z=z_witness)

@@ -1,7 +1,7 @@
 """Per-bunch injected charges as a function of the knobs.
 
 Ported from twobunch-s2e-rl (src/twobunch_s2e_rl/rl/plants.py @ 7ac3617). The transmission heads
-predict surviving FRACTIONS; the charge at the treaty point is T x the injected charge returned here.
+predict surviving FRACTIONS T; the charge at the output element is T * the injected charge returned here.
 """
 
 from __future__ import annotations

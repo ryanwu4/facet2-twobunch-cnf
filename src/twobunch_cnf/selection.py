@@ -1,11 +1,13 @@
-"""Validation metrics that see what the injector fine-tune is for (pooled NLL does not):
+"""Validation metrics for fine-tuning on injector variations, which the pooled NLL does not measure:
 
   val_paired_delta_rms_um   RMS over validation pairs of (predicted - true) injector effect on the
-                            bunch spacing, effect = row(injector point) - row(injector = golden) at
-                            identical linac knobs (Bmad pairs share the radiation seed). Predictions
-                            use common random numbers, so flow sampling noise largely cancels.
-  val_old_spacing_mae_um    spacing MAE on validation rows of campaigns WITHOUT pairs (the old,
-                            golden-beam data: the no-regression check).
+                            bunch spacing. A pair is two rows at identical linac knobs, one at an
+                            injector setting and one at the baseline ("golden") injector, and the
+                            effect is their difference (Bmad pairs share the radiation seed).
+                            Predictions use common random numbers, so flow sampling noise largely
+                            cancels.
+  val_old_spacing_mae_um    spacing MAE on validation rows of campaigns WITHOUT pairs (the older
+                            data, all at the golden injector beam): the no-regression check.
 
 Truth comes from the table's own (standardized) particle subsamples, de-standardized with the
 model's scalers (the dataset is standardized with the same ones).

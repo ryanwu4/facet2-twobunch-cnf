@@ -7,8 +7,8 @@ A `--config` yaml sets any of the flags below by their option name (e.g. `n_laye
 given on the command line override it. --processed and --out are required (command line or yaml);
 there are no repo-relative defaults. The resolved settings + provenance go to <out>/run.json.
 
-Checkpoints -> <out>/checkpoints/, CSV logs alongside. Model (de)norm buffers are
-loaded from the preprocess _norm.json so the checkpoint is self-contained.
+Checkpoints go to <out>/checkpoints/, with CSV logs alongside. The particle and knob scalings are
+read from the table's _norm.json and stored in the model, so the checkpoint is self-contained.
 """
 
 from __future__ import annotations

@@ -1,4 +1,5 @@
-"""Evaluate a trained two-bunch flow: per-bunch/inter-bunch parity, feasibility, overlays.
+"""Evaluate a trained flow against a processed table: parity of per-bunch and drive-witness quantities,
+survival and transmission, and phase-space overlays.
 
   python -m twobunch_cnf.eval --ckpt '<run_dir>/checkpoints/best-*.ckpt' --processed <table>.h5 --out <dir>
 
@@ -33,7 +34,7 @@ PARITY_KEYS = [
     ("energy_difference", "ΔE (D−W) [eV]", False),
     ("transverse_offset", "transverse offset [m]", True),
     ("witness_energy_spread", "witness σ_E [eV]", True),
-    # matching objectives (BMAG / slice-β) -- now MBRL reward terms, so gated by the R² check
+    # matching objectives (BMAG / slice-β) -- reward terms in model-based RL, so gated by the R² check
     ("witness_bmag_x", "witness BMAG_x", True),
     ("witness_bmag_y", "witness BMAG_y", True),
     ("witness_slice_bmag_max", "witness slice BMAG max", True),

@@ -1,18 +1,17 @@
-"""Differentiable beam observables on (B, N, 6) clouds in (x,y,z,px,py,pz).
+"""Differentiable beam observables of (B, N, 6) particle tensors in (x, y, z, px, py, pz).
 
-Positions [m], momenta [eV/c]. All functions return (B,) and are differentiable, so
-the surrogate's sampled clouds give gradients w.r.t. the knobs for MBRL. The emittance
-kernel is reused verbatim from the photoinjector flow (slac-photoinjector-rl) and matches
-ParticleGroup.norm_emit_x/4d to ~1e-9.
+Positions [m], momenta [eV/c]. All functions return (B,) and are differentiable, so observables of
+the flow's samples have gradients with respect to the knobs. The emittance code is reused verbatim
+from slac-photoinjector-rl and matches ParticleGroup.norm_emit_x / norm_emit_4d to ~1e-9.
 
-Two conventions to note vs the campaign's getBeamSpecs quantities:
-- Centroids/offsets here use the MEAN (differentiable); getBeamSpecs uses the MEDIAN.
-  On real data the transverse offset / angular misalignment differ by ~8-12% (median) and
-  up to ~55% (tail, where halo drags the mean). Means are used deliberately for MBRL
-  gradients; treat campaign-median parity as approximate.
-- The PENT openPMD frame stores z = -(t - <t>)*c, so larger z = earlier arrival. bunch
-  spacing below is signed to match the campaign (drive - witness in z == witness - drive
-  in arrival time), i.e. positive when the witness trails the drive.
+Two differences from the quantities of FACET2-S2E's getBeamSpecs:
+- Centroids and offsets here use the MEAN, which is differentiable; getBeamSpecs uses the MEDIAN.
+  On the simulated beams the transverse offset and angular misalignment differ by ~8-12% for a
+  typical beam and by up to ~55% for halo-dominated beams, where halo drags the mean. Treat
+  comparisons with getBeamSpecs values as approximate.
+- z is the flow's longitudinal coordinate, z = -c (t - <t>), so a larger z is an earlier arrival.
+  The bunch spacing below is signed as in getBeamSpecs (drive - witness in z == witness - drive in
+  arrival time), i.e. positive when the witness trails the drive.
 """
 
 from __future__ import annotations
@@ -79,7 +78,8 @@ def _bmag(beta, alpha, beta0, alpha0):
 
 
 def twiss_bmag(parts: torch.Tensor, beta0: float = 0.5, alpha0: float = 0.0):
-    """Projected trace-space Twiss (beta,alpha) and BMAG at PENT, vs golden (beta0, alpha0)."""
+    """Projected trace-space Twiss (beta, alpha) and BMAG against a target (beta0, alpha0). The
+    defaults are FACET2-S2E's target at PENT, the plasma entrance."""
     pz = parts[..., 5].clamp_min(1.0)
     bx, ax, _ = _trace_twiss(parts[..., 0], parts[..., 3] / pz)
     by, ay, _ = _trace_twiss(parts[..., 1], parts[..., 4] / pz)
@@ -119,9 +119,9 @@ def slice_twiss_bmag(parts: torch.Tensor, n_slices: int = 5, beta0: float = 0.5,
 def per_bunch(
     parts: torch.Tensor, beta0: float = 0.5, alpha0: float = 0.0, n_slices: int = 5
 ) -> dict[str, torch.Tensor]:
-    """Per-bunch scalar observables (all (B,)). Includes projected + sliced Twiss/BMAG for the
-    PENT matching objective (vs golden beta0=0.5 m, alpha0=0); raw slice-beta is exposed so the
-    reward can target an arbitrary witness slice-beta directly."""
+    """Per-bunch scalar observables (all (B,)). Includes projected and sliced Twiss and BMAG against
+    a target (beta0, alpha0), by default FACET2-S2E's target at PENT (0.5 m, 0); the raw slice beta
+    is included so a reward can target any witness slice beta directly."""
     ne = norm_emits(parts)
     e = _energy(parts)
     out = {
@@ -146,7 +146,7 @@ def _slopes(parts: torch.Tensor):  # xp, yp = px/pz, py/pz centroids (B,)
 
 
 def inter_bunch(drive: torch.Tensor, witness: torch.Tensor) -> dict[str, torch.Tensor]:
-    """Drive<->witness relative observables (the campaign 'quality' quantities)."""
+    """Drive-witness relative observables, as getBeamSpecs defines them."""
     cz_d, cz_w = drive[..., 2].mean(1), witness[..., 2].mean(1)
     cx_d, cx_w = drive[..., 0].mean(1), witness[..., 0].mean(1)
     cy_d, cy_w = drive[..., 1].mean(1), witness[..., 1].mean(1)

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "facet2-twobunch-cnf"
 version = "0.1.0"
-description = "Conditional normalizing-flow surrogate of the FACET-II two-bunch beam (drive + witness 6D phase space and feasibility) conditioned on machine knobs"
+description = "Conditional normalizing-flow surrogate of the FACET-II two-bunch beam: samples the drive and witness bunches, and predicts their transmission, from the machine settings"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]

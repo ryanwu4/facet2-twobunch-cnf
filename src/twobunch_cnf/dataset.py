@@ -1,14 +1,15 @@
-"""Dataset + DataModule for the two-bunch conditional-flow surrogate.
+"""Dataset and DataModule for training the flow on a processed table.
 
-Loads processed/twobunch_flow.h5 into memory and serves per-sample dicts:
-  knobs           (8,)      knobs normalized to [0,1] (from sweep bounds)
-  drive_parts     (P,6)     drive cloud, per-bunch StandardScaler-standardized
-  witness_parts   (P,6)     witness cloud, standardized (zeros where not density-trainable)
+Loads a processed HDF5 table (one row per simulated beam) into memory and serves one dict per row:
+  knobs           (n_knob,)  knobs scaled to [0, 1] over their training ranges
+  drive_parts     (P, 6)     drive particle subsample, standardized per coordinate
+  witness_parts   (P, 6)     witness subsample, standardized (zeros where the witness has too few
+                             particles to train the distribution on)
   drive_present / witness_viable / drive_density / witness_density   bool masks
-  drive_frac / witness_frac   surviving fractions (feasibility-head targets)
+  drive_frac / witness_frac   surviving fractions (targets of the transmission heads)
 
-Normalization mirrors the photoinjector flow: knobs min-max to [0,1] (the RL box),
-particles per-dim per-bunch StandardScaler (raw scales span ~x:1e-4 m to pz:1e10 eV/c).
+Particles are standardized per bunch and coordinate, since the raw scales span ~1e-4 m in x to
+~1e10 eV/c in pz.
 """
 
 from __future__ import annotations

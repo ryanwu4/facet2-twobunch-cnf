@@ -1,7 +1,7 @@
-# Units and descriptions of the TwoBunchFlow conditioning knobs, keyed by knob name.
-# Confirmed by Ryan 2026-10-28; derived from the code that applies each knob.
+# Units and descriptions of the flow's input knobs, keyed by knob name. scripts/export_bundle.py copies
+# them into each bundle.yaml. Derived from the code that applies each knob; last checked against it 2026-10-28.
 #   confidence: code     -> unit read off the setter / its docstring / an inline comment
-#   confidence: inferred -> unit inferred (names, golden values, conventions); check against the code
+#   confidence: inferred -> unit inferred (names, baseline values, conventions); check against the code
 #                           that consumes the value before relying on it
 # Sources: FACET2-S2E src/FACET2_S2E/simulators/bmad/lattice/set_lattice.py (linac / FF / W-chicane
 # knobs), twobunch-s2e-rl src/twobunch_s2e_rl/sim/injector.py + datagen/sweep_params.py (injector knobs).

@@ -1,8 +1,9 @@
 """Artifact helpers: checkpoint resolution, run.json provenance, and a checkpoint's knob frame.
 
 Ported from twobunch-s2e-rl (src/twobunch_s2e_rl/artifacts.py @ 7ac3617). Only checkpoints that
-record their knob names (`knob_keys`) and `treaty_point` are supported here; the legacy tables that
-fill those in for older 8/23/26-knob checkpoints stay in twobunch-s2e-rl.
+record their knob names (`knob_keys`) and output element (`treaty_point`, FACET2-S2E's name for an
+element where beams are saved) are supported here; the legacy tables that fill those in for older
+8/23/26-knob checkpoints stay in twobunch-s2e-rl.
 """
 
 from __future__ import annotations

@@ -1,11 +1,12 @@
-"""Model bundles: a converted checkpoint + its norm + bundle.yaml (knob table, handoff references).
+"""Model bundles: a directory with everything needed to load a trained flow.
 
   twobunch_cnf.load_model("c_b3_ema")        # a bundle shipped in twobunch_cnf/resources/
   twobunch_cnf.load_model("/path/to/bundle")  # any bundle directory
 
-bundle.yaml (written by scripts/export_bundle.py) records the checkpoint file and its sha256, the norm
-json (injected charges, scalers), the knobs in frame order with bounds / baseline / unit /
-description, the handoff element's reference values per plane, and the provenance.
+A bundle holds the converted checkpoint, its norm.json (particle and knob scalings, injected charges), the
+training run's run.json, and bundle.yaml, which scripts/export_bundle.py writes: the checkpoint's sha256,
+the knobs in the model's order with their training range, baseline, unit and description, the position
+and reference time of each output plane, and provenance.
 """
 
 from __future__ import annotations
@@ -52,8 +53,11 @@ def sha256(path) -> str:
 
 
 def load_model(name: str = "c_b3_ema", device="cpu", verify: bool = True):
-    """TwoBunchCNF of a bundle (shipped name or bundle directory). verify: check the checkpoint's sha256
-    and that the bundle's knob table matches the checkpoint's stored frame."""
+    """Load a bundle as a TwoBunchCNF.
+
+    name: a shipped bundle (see `available_models()`) or a bundle directory. device: where the flow runs.
+    verify: check the checkpoint against bundle.yaml's sha256, and the bundle's knob table against the knob
+    names and ranges stored in the checkpoint."""
     from .cnf import TwoBunchCNF
     from .model import load_flow
 

@@ -1,14 +1,14 @@
 """Convert a twobunch-s2e-rl TwoBunchFlow checkpoint to this package's (pruned) model, once.
 
-The pruned model no longer accepts the options that were removed from main (they live on
-archive/unpruned-7ac3617 and experiment branches off it); TwoBunchFlow.on_load_checkpoint refuses checkpoints
-that carry them (Lightning would otherwise drop unknown hparams silently). `migrate`:
+This package removed the options the shipped model does not use (they live on archive/unpruned-7ac3617
+and experiment branches off it). TwoBunchFlow.on_load_checkpoint refuses checkpoints that carry them,
+because Lightning would otherwise drop unknown hparams silently. `migrate`:
 
-  1. requires the checkpoint to record its frame (`knob_keys`, `treaty_point`);
-  2. checks every removed option is OFF, i.e. equals the value the pruned model implies. In a twobunch-s2e-rl
-     checkpoint an option absent from it takes the default it had before the prune (it predates the option);
-     a checkpoint written by this package (`twobunch_cnf_version` / `twobunch_cnf_migration` marker, or none of
-     the removed hparams at all) simply has no such options;
+  1. requires the checkpoint to record its knob names and output element (`knob_keys`, `treaty_point`);
+  2. checks every removed option is OFF, i.e. equals the value the pruned model implies. A twobunch-s2e-rl
+     checkpoint that predates an option counts it at the default it had before the prune. A checkpoint
+     written by this package (it has a `twobunch_cnf_version` / `twobunch_cnf_migration` marker, or none of
+     the removed hparams) has nothing to check;
   3. refuses any other hparam the pruned model does not know (e.g. from an experiment branch);
   4. drops the removed keys, loads the weights STRICTLY into the pruned model, and writes a new file
      (never in place) with a `twobunch_cnf_migration` record.
