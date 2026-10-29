@@ -8,7 +8,7 @@ from twobunch_cnf.beam_io import split_bunches, stack_coords, subsample
 
 
 def _two_bunch_group(n_d=30, n_w=10):
-    pmd = pytest.importorskip("pmd_beamphysics")
+    pmd = pytest.importorskip("beamphysics")
     rng = np.random.default_rng(0)
     n = n_d + n_w
     data = {k: rng.normal(size=n) for k in ("x", "y", "px", "py")}

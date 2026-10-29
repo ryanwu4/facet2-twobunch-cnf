@@ -52,7 +52,7 @@ def test_tampered_checkpoint_is_refused(tmp_path):
 
 
 def test_baseline_shot(model):
-    pytest.importorskip("pmd_beamphysics")
+    pytest.importorskip("beamphysics")
     dr = model.draw(n_particles=10000, seed=0)
     assert bool(dr.witness_present[0])
     n = int(dr.n_drive[0] + dr.n_witness[0])

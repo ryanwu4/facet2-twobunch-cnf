@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
-pmd = pytest.importorskip("pmd_beamphysics")
+pmd = pytest.importorskip("beamphysics")
 
 from twobunch_cnf.beam_io import split_bunches  # noqa: E402
 from twobunch_cnf.cnf import C_LIGHT, TwoBunchCNF, reference_time_upstream  # noqa: E402

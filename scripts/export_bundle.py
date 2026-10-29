@@ -57,7 +57,7 @@ def clock_offset(globs: list[str], ref_time_s: float, per_glob: int) -> dict | N
     """Charge-weighted mean arrival minus the lattice reference time, over S2E beam files at the plane."""
     if not globs:
         return None
-    from pmd_beamphysics import ParticleGroup
+    from beamphysics import ParticleGroup
 
     files = []
     for g in globs:

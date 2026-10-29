@@ -241,7 +241,10 @@ class TwoBunchCNF:
     # ---- export --------------------------------------------------------------------------------
     def to_particle_group(self, draw: BeamDraw, index: int = 0, plane: str = "entrance"):
         """Shot `index` of `draw` as a fixed-z openPMD ParticleGroup at `plane` (see the module doc)."""
-        from pmd_beamphysics import ParticleGroup
+        try:
+            from beamphysics import ParticleGroup
+        except ImportError:  # openPMD-beamphysics from before the rename of pmd_beamphysics
+            from pmd_beamphysics import ParticleGroup
 
         planes = self.handoff["planes"]
         if plane not in planes:
