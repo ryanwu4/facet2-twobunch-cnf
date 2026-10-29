@@ -26,7 +26,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from . import LATENT_DIM
+from . import LATENT_DIM, __version__
 from .properties import compute_emittance_torch, inter_bunch, per_bunch
 
 _LOG_2PI = math.log(2.0 * math.pi)
@@ -576,6 +576,10 @@ class TwoBunchFlow(L.LightningModule):
         m = kp.shape[0]
         scale = float(self.hparams.get("spacing_scale_m", 1e-5))
         return F.smooth_l1_loss((sp[:m] - sp[m:]) / scale, d_true / scale, beta=0.5)
+
+    def on_save_checkpoint(self, checkpoint):
+        # marks checkpoints written by this package (twobunch_cnf.migrate treats them as native)
+        checkpoint["twobunch_cnf_version"] = __version__
 
     def on_load_checkpoint(self, checkpoint):
         """Strict hparams: Lightning silently drops saved hparams that __init__ does not accept, so a checkpoint

@@ -110,3 +110,18 @@ def test_migrate_does_not_move_the_global_rng():
     before = torch.get_rng_state()
     migrate_checkpoint(ck)
     assert torch.equal(torch.get_rng_state(), before)
+
+
+def test_package_native_checkpoints_migrate_as_is():
+    """A checkpoint this package wrote has no removed hparams at all; absent options are NOT pre-prune defaults."""
+    flow = _flow()
+    native = {
+        "state_dict": flow.state_dict(),
+        "hyper_parameters": dict(flow.hparams),
+        "pytorch-lightning_version": lightning.__version__,
+    }
+    assert not set(native["hyper_parameters"]) & set(REMOVED)
+    out = migrate_checkpoint(native)  # no marker: no removed hparams -> native
+    assert out["hyper_parameters"] == dict(flow.hparams)
+    flow.on_save_checkpoint(native)
+    assert native["twobunch_cnf_version"] and migrate_checkpoint(native)
