@@ -277,7 +277,8 @@ def main():
         "--resume",
         default=None,
         help="continue a stopped run from one of its checkpoints (weights, optimizer, learning-rate "
-        "schedule, epoch); pass the run's original flags. The EMA restarts from the resumed weights",
+        "schedule, epoch); pass the run's original flags. The EMA restarts from the resumed weights, "
+        "and run.json is rewritten (copy the old one first to keep it)",
     )
     ap.add_argument(
         "--split",
@@ -297,7 +298,11 @@ def main():
     if not args.processed or not args.out:
         ap.error("--processed and --out are required (on the command line or in --config)")
     write_run_json(
-        args.out, "surrogate", vars(args), parents=[args.processed] + ([args.init_ckpt] if args.init_ckpt else [])
+        args.out,
+        "surrogate",
+        vars(args),
+        parents=[args.processed] + ([args.init_ckpt] if args.init_ckpt else []),
+        overwrite=bool(args.resume),
     )
 
     L.seed_everything(args.seed, workers=True)
