@@ -274,6 +274,12 @@ def main():
         "twobunch_cnf.widen.widen_conditioning)",
     )
     ap.add_argument(
+        "--resume",
+        default=None,
+        help="continue a stopped run from one of its checkpoints (weights, optimizer, learning-rate "
+        "schedule, epoch); pass the run's original flags. The EMA restarts from the resumed weights",
+    )
+    ap.add_argument(
         "--split",
         choices=["random", "group"],
         default="random",
@@ -417,7 +423,7 @@ def main():
         callbacks=callbacks,
         log_every_n_steps=10,
     )
-    trainer.fit(model, datamodule=dm)
+    trainer.fit(model, datamodule=dm, ckpt_path=args.resume)
     # the end-of-training weights, always (save_last=True kept last.ckpt at the best epoch in the
     # 2026-10-15 fine-tunes, so the final weights were lost)
     trainer.save_checkpoint(f"{args.out}/checkpoints/final.ckpt")
